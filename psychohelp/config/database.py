@@ -22,10 +22,10 @@ configurations = {
     "dev": DevConfig,
 }
 
-profile = "local-dev"
+profile = "dev"
 config = configurations[profile]
 
-RESET_DB_ON_START = True
+RESET_DB_ON_START = False
 RESET_COOKIE_ON_START = True
 
 
