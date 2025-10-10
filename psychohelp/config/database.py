@@ -1,32 +1,24 @@
+import os
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
-
 from contextlib import asynccontextmanager
 
 
 class Config:
-    DATABASE_URL = ""
+    POSTGRES_USER = os.getenv("POSTGRES_USER", "myuser")
+    POSTGRES_PASSWORD = os.getenv("POSTGRES_PASSWORD", "mypassword") 
+    POSTGRES_DB = os.getenv("POSTGRES_DB", "mydatabase")
+    POSTGRES_HOST = os.getenv("POSTGRES_HOST", "localhost")
+    POSTGRES_PORT = os.getenv("POSTGRES_PORT", "5432")
+    
+    DATABASE_URL = f"postgresql+asyncpg://{POSTGRES_USER}:{POSTGRES_PASSWORD}@{POSTGRES_HOST}:{POSTGRES_PORT}/{POSTGRES_DB}"
 
 
-class LocalDevConfig(Config):
-    DATABASE_URL = "postgresql+asyncpg://myuser:mypassword@localhost:5432/mydatabase"
+config = Config()
 
-
-class DevConfig(Config):
-    DATABASE_URL = "postgresql+asyncpg://a_admin:superStrongPassword@185.128.105.126:5432/psychological"
-
-
-configurations = {
-    "local-dev": LocalDevConfig,
-    "dev": DevConfig,
-}
-
-profile = "dev"
-config = configurations[profile]
-
-RESET_DB_ON_START = False
-RESET_COOKIE_ON_START = True
+RESET_DB_ON_START = os.getenv("RESET_DB_ON_START", "false").lower() == "true"
+RESET_COOKIE_ON_START = os.getenv("RESET_COOKIE_ON_START", "true").lower() == "true"
 
 
 @asynccontextmanager

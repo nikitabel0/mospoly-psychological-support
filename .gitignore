@@ -62,10 +62,6 @@ Thumbs.db
 *.sublime-project
 *.sublime-workspace
 
-# Docker
-docker-compose.yml
-Dockerfile
-
 # Node.js
 node_modules/
 npm-debug.log

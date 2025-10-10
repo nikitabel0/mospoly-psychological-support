@@ -9,19 +9,23 @@ description = "Psychological help website"
 requires-python = ">=3.8"
 dependencies = [
     "fastapi==0.115.0",
-    "httpx",
-    "pytest",
-    "anyio",
-    "pyjwt==2.9.0",
-    "SQLAlchemy==2.0.35",
+    "uvicorn[standard]>=0.24.0",
+    "sqlalchemy==2.0.35",
     "asyncpg==0.30.0",
-    "pydantic[email]",
+    "passlib[bcrypt]",
+    "pyjwt==2.9.0",  
+    "pydantic[email]>=2.0.0",
     "pydantic-extra-types",
     "phonenumbers",
-    "passlib",
-    "uvicorn",
+    "httpx",
+    "anyio",
     "greenlet",
-    "bcrypt"
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest",
+    "pytest-asyncio",
 ]
 
 [project.gui-scripts]
