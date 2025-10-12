@@ -1,17 +1,17 @@
-graph TB
-    subgraph "Client"
+graph LR
+    subgraph Client["Client"]
         Browser[Web/Mobile Client]
     end
     
-    subgraph "API Layer"
+    subgraph API["API Layer"]
         FastAPI[FastAPI Application<br/>Controllers]
     end
     
-    subgraph "Business Logic"
+    subgraph Business["Business Logic"]
         Services[Services Layer<br/>Бизнес-логика]
     end
     
-    subgraph "Database"
+    subgraph Database["Database"]
         DB[(PostgreSQL<br/>users, therapists,<br/>appointments, reviews, roles)]
     end
     
@@ -20,11 +20,11 @@ graph TB
     Services --> Repositories
     Repositories --> DB
     
-    classDef client fill:#F5DEB3
-    classDef api fill:#ADD8E6
-    classDef business fill:#90EE90
-    classDef data fill:#FFFFE0
-    classDef database fill:#F08080
+    classDef client fill:#F5DEB3,color:#000
+    classDef api fill:#ADD8E6,color:#000
+    classDef business fill:#90EE90,color:#000
+    classDef data fill:#FFFFE0,color:#000
+    classDef database fill:#F08080,color:#000
     
     class Browser client
     class FastAPI api
