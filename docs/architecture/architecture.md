@@ -7,15 +7,17 @@
 ## Диаграммы
 
 ### 1. Архитектура системы
-**Файл**: [`architecture_diagram.mmd`](./architecture_diagram.mmd)
 
 Трехслойная архитектура:
 - **API Layer**: FastAPI контроллеры
 - **Business Logic**: Сервисы с бизнес-логикой
 - **Data Access**: Репозитории для работы с БД
 
+![Архитектура системы](./architecture_diagram.png)
+
+**Исходный файл**: [`architecture_diagram.mmd`](./architecture_diagram.mmd)
+
 ### 2. База данных (ERD)
-**Файл**: [`database_erd.mmd`](./database_erd.mmd)
 
 Основные таблицы:
 - **users** - пользователи системы
@@ -23,6 +25,10 @@
 - **appointments** - записи на приём
 - **reviews** - отзывы о приёмах
 - **roles** - роли пользователей (многие-ко-многим)
+
+![ERD базы данных](./database_erd.png)
+
+**Исходный файл**: [`database_erd.mmd`](./database_erd.mmd)
 
 ## Технологический стек
 
