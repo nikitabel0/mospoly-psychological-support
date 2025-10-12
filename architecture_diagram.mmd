@@ -1,0 +1,36 @@
+---
+title: Архитектура системы - Обзор
+---
+graph TB
+    subgraph "Client"
+        Browser[Web/Mobile Client]
+    end
+    
+    subgraph "API Layer"
+        FastAPI[FastAPI Application<br/>Controllers]
+    end
+    
+    subgraph "Business Logic"
+        Services[Services Layer<br/>Бизнес-логика]
+    end
+    
+    subgraph "Database"
+        DB[(PostgreSQL<br/>users, therapists,<br/>appointments, reviews, roles)]
+    end
+    
+    Browser -->|HTTP/HTTPS| FastAPI
+    FastAPI --> Services
+    Services --> Repositories
+    Repositories --> DB
+    
+    classDef client fill:#F5DEB3
+    classDef api fill:#ADD8E6
+    classDef business fill:#90EE90
+    classDef data fill:#FFFFE0
+    classDef database fill:#F08080
+    
+    class Browser client
+    class FastAPI api
+    class Services business
+    class Repositories,Auth data
+    class DB database
