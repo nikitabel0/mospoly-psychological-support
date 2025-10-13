@@ -77,9 +77,9 @@ mospoly-psychological-support/
 
 ### Предварительные требования
 
-- Python 3.8+
+- Python 3.13
 - Docker и Docker Compose
-- UV (рекомендуется) или pip
+- UV
 
 ### Локальная разработка
 
@@ -91,11 +91,7 @@ mospoly-psychological-support/
 
 2. **Установка зависимостей:**
    ```
-   # С использованием UV (рекомендуется)
    uv pip install -e .
-   
-   # Или с использованием pip
-   pip install -e .
    ```
 
 3. **Запуск базы данных:**
@@ -105,11 +101,7 @@ mospoly-psychological-support/
 
 4. **Запуск приложения:**
    ```
-   # С использованием UV
    uv run python -m psychohelp.main
-   
-   # Или напрямую
-   python -m psychohelp.main
    ```
 
 ### Docker (рекомендуется)
