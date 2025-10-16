@@ -23,15 +23,13 @@ def create_access_token(sub: str) -> str:
 
 
 def get_user_id_from_token(token: str) -> UUID:
-    try:
-        decoded = jwt.decode(
-            token,
-            SECRET_KEY,
-            algorithms=[ALGORITHM],
-            options={"verify_iat": True, "verify_exp": True, "verify_signature": True},
-        )
-    except:
-        return None
+    decoded = jwt.decode(
+        token,
+        SECRET_KEY,
+        algorithms=[ALGORITHM],
+        options={"verify_iat": True, "verify_exp": True, "verify_signature": True},
+    )
+
     return UUID(decoded["sub"])
 
 

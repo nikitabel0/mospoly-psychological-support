@@ -7,11 +7,9 @@ from sqlalchemy.exc import IntegrityError
 
 
 async def get_user_by_id(user_id: UUID):
-    try:
-        async with get_async_db() as session:
-            result = await session.execute(select(User).filter(User.id == user_id))
-    except:
-        return None
+    async with get_async_db() as session:
+        result = await session.execute(select(User).filter(User.id == user_id))
+
     return result.scalar_one_or_none()
 
 
