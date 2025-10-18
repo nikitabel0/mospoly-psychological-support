@@ -13,13 +13,16 @@ dependencies = [
     "sqlalchemy==2.0.35",
     "asyncpg==0.30.0",
     "passlib[bcrypt]",
-    "pyjwt==2.9.0",  
+    "pyjwt==2.9.0",
     "pydantic[email]>=2.0.0",
     "pydantic-extra-types",
     "phonenumbers",
     "httpx",
     "anyio",
     "greenlet",
+    "bcrypt==4.3.0",
+    "alembic>=1.14.1",
+    "psycopg2-binary>=2.9.10",
 ]
 
 [project.optional-dependencies]

@@ -6,6 +6,7 @@ from psychohelp.repositories.users import (
     create_user,
     UUID,
 )
+from psychohelp.services.users import exceptions, models
 
 
 async def get_user_by_id(user_id: UUID):
@@ -43,7 +44,13 @@ async def register_user(
 
 async def login_user(email: str, password: str):
     user = await repo_get_user_by_email(email)
-    if user is None or not verify_password(password, user.password):
-        return None
+    if user is None:
+        raise exceptions.UserNotFound()
 
-    return user, create_access_token(user.id)
+    if not verify_password(password, user.password):
+        raise exceptions.WrongPassword()
+
+    return models.UserWithToken(
+        user=user,
+        token=create_access_token(user.id),
+    )

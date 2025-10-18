@@ -15,7 +15,7 @@ class UserCreateRequest(BaseModel):
     phone_number: PhoneNumber
     email: EmailStr | None = None
     social_media: str | None = Field(None, max_length=50)
-    password: str = Field(min_length=8, max_length=64)
+    password: str = Field(min_length=8, max_length=256)
 
 
 class UserBase(BaseModel):
