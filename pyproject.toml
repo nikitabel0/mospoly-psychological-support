@@ -24,6 +24,8 @@ dependencies = [
     "alembic>=1.14.1",
     "psycopg2-binary>=2.9.10",
     "ruff>=0.1.0",
+    "pytest",
+    "pytest-asyncio",
 ]
 
 [project.optional-dependencies]
