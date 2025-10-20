@@ -1,5 +1,4 @@
-from fastapi import HTTPException, APIRouter, Response
-
+from fastapi import APIRouter, HTTPException, Response
 from starlette.status import (
     HTTP_200_OK,
     HTTP_400_BAD_REQUEST,
@@ -8,11 +7,11 @@ from starlette.status import (
 )
 
 from psychohelp.services.roles import (
-    get_roles_by_user_id,
+    UUID,
+    UserRole,
     add_roles_by_user_id,
     delete_roles_by_user_id,
-    UserRole,
-    UUID,
+    get_roles_by_user_id,
 )
 
 router = APIRouter(prefix="/roles", tags=["roles"])
@@ -34,11 +33,11 @@ async def add_roles(user_id: UUID, roles: list[UserRole]):
         )
     try:
         await add_roles_by_user_id(user_id, roles)
-    except:
+    except Exception as e:
         raise HTTPException(
             status_code=HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Не удалось добавить роли",
-        )
+        ) from e
     return Response(None, HTTP_200_OK)
 
 
@@ -50,8 +49,8 @@ async def delete_roles(user_id: UUID, roles: list[UserRole]):
         )
     try:
         await delete_roles_by_user_id(user_id, roles)
-    except:
+    except Exception as e:
         raise HTTPException(
             status_code=HTTP_500_INTERNAL_SERVER_ERROR, detail="Не удалось удалить роли"
-        )
+        ) from e
     return Response(None, HTTP_200_OK)

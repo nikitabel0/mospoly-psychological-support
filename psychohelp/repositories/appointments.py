@@ -1,15 +1,15 @@
-from psychohelp.models.appointments import (
-    Appointment,
-    AppointmentType,
-    AppointmentStatus,
-)
-from psychohelp.config.database import get_async_db
+from datetime import datetime
+from uuid import UUID
 
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.future import select
 
-from uuid import UUID
-from datetime import datetime
+from psychohelp.config.database import get_async_db
+from psychohelp.models.appointments import (
+    Appointment,
+    AppointmentStatus,
+    AppointmentType,
+)
 
 
 async def get_appointment_by_id(appointment_id: UUID):

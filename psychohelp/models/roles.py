@@ -1,10 +1,10 @@
-from psychohelp.config.database import Base
-
-from sqlalchemy import Column, ForeignKey, Enum, PrimaryKeyConstraint
-from sqlalchemy.orm import relationship
-from sqlalchemy.dialects.postgresql import UUID
-
 import enum
+
+from sqlalchemy import Column, Enum, ForeignKey, PrimaryKeyConstraint
+from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.orm import relationship
+
+from psychohelp.config.database import Base
 
 
 class UserRole(enum.Enum):

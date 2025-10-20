@@ -1,6 +1,5 @@
 import os
 
-
 __all__ = ["SECRET_KEY", "ALGORITHM", "ACCESS_TOKEN_EXPIRE"]
 
 SECRET_KEY = os.getenv("SECRET_KEY", "your_default_secret_key")

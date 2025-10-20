@@ -1,8 +1,8 @@
+from datetime import datetime, timedelta, timezone
+
 from fastapi import Response
 
 from psychohelp.config import ACCESS_TOKEN_EXPIRE
-
-from datetime import datetime, timezone, timedelta
 
 
 def set_token_in_cookie(response: Response, token: str):

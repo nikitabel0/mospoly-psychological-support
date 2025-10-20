@@ -1,13 +1,13 @@
 # Импортируем все модели для регистрации в SQLAlchemy
-from .users import User
-from .therapists import Therapist
-from .appointments import Appointment, AppointmentType, AppointmentStatus
+from .appointments import Appointment, AppointmentStatus, AppointmentType
 from .reviews import Review
 from .roles import Role, UserRole
+from .therapists import Therapist
+from .users import User
 
 __all__ = [
     "User",
-    "Therapist", 
+    "Therapist",
     "Appointment",
     "AppointmentType",
     "AppointmentStatus",

@@ -1,8 +1,9 @@
-from fastapi import HTTPException, APIRouter, Query, Request
+from fastapi import APIRouter, HTTPException, Query, Request
 
 from psychohelp.config.logging import get_logger
-from psychohelp.services.therapists import get_therapist_by_id, get_therapists as srv_get_therapists, UUID
 from psychohelp.schemas.therapists import TherapistBase
+from psychohelp.services.therapists import UUID, get_therapist_by_id
+from psychohelp.services.therapists import get_therapists as srv_get_therapists
 
 logger = get_logger(__name__)
 router = APIRouter(prefix="/therapists", tags=["therapists"])

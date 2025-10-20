@@ -1,9 +1,9 @@
-from psychohelp.models.reviews import Review
-from psychohelp.config.database import get_async_db
+from uuid import UUID
 
 from sqlalchemy import select
 
-from uuid import UUID
+from psychohelp.config.database import get_async_db
+from psychohelp.models.reviews import Review
 
 
 async def get_review(appointment_id: UUID):
