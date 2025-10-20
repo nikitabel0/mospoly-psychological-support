@@ -50,7 +50,7 @@ async def user(id: str) -> UserResponse:
     except ValueError:
         # If not a valid UUID, treat as email
         user = await users.get_user_by_email(id)
-    
+
     if user is None:
         raise HTTPException(
             status_code=HTTP_404_NOT_FOUND, detail="Пользователь не найден"
