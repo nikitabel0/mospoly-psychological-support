@@ -41,8 +41,16 @@ async def user_token(request: Request) -> UserResponse:
 
 
 @router.get("/user/{id}", response_model=UserResponse)
-async def user(id: users.UUID) -> UserResponse:
-    user = await users.get_user_by_id(id)
+async def user(id: str) -> UserResponse:
+    # Try to parse as UUID first
+    try:
+        from uuid import UUID as PyUUID
+        uuid_id = PyUUID(id)
+        user = await users.get_user_by_id(uuid_id)
+    except ValueError:
+        # If not a valid UUID, treat as email
+        user = await users.get_user_by_email(id)
+    
     if user is None:
         raise HTTPException(
             status_code=HTTP_404_NOT_FOUND, detail="Пользователь не найден"
