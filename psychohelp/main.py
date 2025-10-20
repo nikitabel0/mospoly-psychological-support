@@ -56,6 +56,10 @@ def get_application() -> FastAPI:
         allow_headers=["*"],
     )
 
+    @application.get("/health")
+    async def health_check():
+        return {"status": "ok", "message": "Service is running"}
+
     @application.on_event("startup")
     async def on_startup() -> None:
         logger.info("Starting application")

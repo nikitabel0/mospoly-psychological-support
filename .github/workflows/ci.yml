@@ -52,8 +52,20 @@ jobs:
     
     - name: Start application server
       run: |
+        # Wait for PostgreSQL to be ready
+        sleep 5
+        
+        # Run database migrations
+        uv run alembic upgrade head
+        
+        # Start the application server in background
         uv run python -m psychohelp.main &
+        
+        # Wait for server to start
         sleep 10
+        
+        # Check if server is running
+        curl -f http://localhost:8000/health || echo "Server not ready yet"
       env:
         DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_db
         POSTGRES_USER: postgres
@@ -61,9 +73,15 @@ jobs:
         POSTGRES_DB: test_db
         POSTGRES_HOST: localhost
         POSTGRES_PORT: 5432
+        RESET_DB_ON_START: "true"
     
     - name: Run tests
       run: |
         uv run pytest tests/ -v
       env:
         DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_db
+        POSTGRES_USER: postgres
+        POSTGRES_PASSWORD: postgres
+        POSTGRES_DB: test_db
+        POSTGRES_HOST: localhost
+        POSTGRES_PORT: 5432
