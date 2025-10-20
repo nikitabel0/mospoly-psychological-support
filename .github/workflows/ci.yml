@@ -30,7 +30,7 @@ jobs:
     - name: Set up Python
       uses: actions/setup-python@v4
       with:
-        python-version: '3.11'
+        python-version: '3.10'
     
     - name: Install uv
       uses: astral-sh/setup-uv@v2
@@ -48,6 +48,18 @@ jobs:
     - name: Run Ruff formatter (check)
       run: |
         uv run ruff format --check .
+    
+    - name: Start application server
+      run: |
+        uv run python -m psychohelp.main &
+        sleep 10
+      env:
+        DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_db
+        POSTGRES_USER: postgres
+        POSTGRES_PASSWORD: postgres
+        POSTGRES_DB: test_db
+        POSTGRES_HOST: localhost
+        POSTGRES_PORT: 5432
     
     - name: Run tests
       run: |

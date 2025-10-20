@@ -6,10 +6,10 @@ from uuid import uuid4
 
 async def test_get_user(user):
     async with client() as c:
-        r = await c.get(f"/users/user/{user["id"]}")
+        r = await c.get(f"/users/user/{user['id']}")
         assert r.status_code == 200
 
-        r = await c.get(f"/users/user/{user["email"]}")
+        r = await c.get(f"/users/user/{user['email']}")
         assert r.status_code == 200
 
         email = "notanemail"
