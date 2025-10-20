@@ -1,6 +1,4 @@
-import pytest
 
-from . import client
 
 
 # TODO: Uncomment when database and server are available

@@ -1,6 +1,4 @@
-from uuid import uuid4
 
-from . import client
 
 
 # TODO: Uncomment when database and server are available
