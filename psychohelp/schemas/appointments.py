@@ -1,12 +1,12 @@
-from psychohelp.repositories.appointments import (
-    AppointmentType,
-    AppointmentStatus,
-    UUID,
-)
+from datetime import datetime
 
 from pydantic import BaseModel
 
-from datetime import datetime
+from psychohelp.repositories.appointments import (
+    UUID,
+    AppointmentStatus,
+    AppointmentType,
+)
 
 
 class AppointmentBase(BaseModel):

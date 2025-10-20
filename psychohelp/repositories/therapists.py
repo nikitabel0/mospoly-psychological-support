@@ -1,11 +1,10 @@
-from psychohelp.models.therapists import Therapist
-from psychohelp.config.database import get_async_db
+from uuid import UUID
 
 from sqlalchemy import select
-from sqlalchemy.orm import joinedload
-from sqlalchemy.orm import selectinload
+from sqlalchemy.orm import joinedload, selectinload
 
-from uuid import UUID
+from psychohelp.config.database import get_async_db
+from psychohelp.models.therapists import Therapist
 
 
 async def get_therapist_by_id(therapist_id: UUID):

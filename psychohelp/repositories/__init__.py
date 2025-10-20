@@ -1,12 +1,10 @@
-from psychohelp.config import *
-
-from passlib.context import CryptContext
 from datetime import datetime, timedelta, timezone
-
 from uuid import UUID
 
 import jwt
+from passlib.context import CryptContext
 
+from psychohelp.config import ACCESS_TOKEN_EXPIRE, ALGORITHM, SECRET_KEY
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 

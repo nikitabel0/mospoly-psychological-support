@@ -1,9 +1,9 @@
-from psychohelp.models.roles import Role, UserRole
-from psychohelp.config.database import get_async_db
-
-from sqlalchemy import select, delete
-
 from uuid import UUID
+
+from sqlalchemy import delete, select
+
+from psychohelp.config.database import get_async_db
+from psychohelp.models.roles import Role, UserRole
 
 
 async def get_roles_by_user_id(user_id: UUID):

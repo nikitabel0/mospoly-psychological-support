@@ -1,8 +1,7 @@
-from pydantic import BaseModel, EmailStr, Field
-from pydantic_extra_types.phone_numbers import PhoneNumber
-
 from uuid import UUID
 
+from pydantic import BaseModel, EmailStr, Field
+from pydantic_extra_types.phone_numbers import PhoneNumber
 
 PhoneNumber.phone_format = "E164"
 PhoneNumber.default_region_code = "+7"

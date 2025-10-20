@@ -1,7 +1,6 @@
-import pytest
+from uuid import uuid4
 
 from . import client
-from uuid import uuid4
 
 
 async def test_get_user(user):

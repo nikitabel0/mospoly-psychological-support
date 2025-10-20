@@ -1,9 +1,9 @@
-from psychohelp.models.users import User
-from psychohelp.config.database import get_async_db
-from psychohelp.repositories import get_user_id_from_token, UUID
-
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
+
+from psychohelp.config.database import get_async_db
+from psychohelp.models.users import User
+from psychohelp.repositories import UUID, get_user_id_from_token
 
 
 async def get_user_by_id(user_id: UUID):

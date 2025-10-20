@@ -1,7 +1,11 @@
 from psychohelp.repositories.therapists import (
-    get_therapist_by_id as repo_get_therapist_by_id,
-    get_therapists as repo_get_therapists,
     UUID,
+)
+from psychohelp.repositories.therapists import (
+    get_therapist_by_id as repo_get_therapist_by_id,
+)
+from psychohelp.repositories.therapists import (
+    get_therapists as repo_get_therapists,
 )
 
 

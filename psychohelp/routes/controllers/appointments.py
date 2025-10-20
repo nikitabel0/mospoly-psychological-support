@@ -1,5 +1,4 @@
-from fastapi import HTTPException, APIRouter, Response, Request
-
+from fastapi import APIRouter, HTTPException, Request, Response
 from starlette.status import (
     HTTP_200_OK,
     HTTP_400_BAD_REQUEST,
@@ -8,22 +7,26 @@ from starlette.status import (
 )
 
 from psychohelp.config.logging import get_logger
+from psychohelp.schemas.appointments import AppointmentBase, AppointmentCreateRequest
 from psychohelp.services.appointments import (
-    get_appointment_by_id,
-    create_appointment as srv_create_appointment,
+    UUID,
     cancel_appointment_by_id,
+    get_appointment_by_id,
     get_appointments_by_token,
     get_appointments_by_user_id,
-    UUID,
 )
-from psychohelp.schemas.appointments import AppointmentBase, AppointmentCreateRequest
+from psychohelp.services.appointments import (
+    create_appointment as srv_create_appointment,
+)
 
 logger = get_logger(__name__)
 router = APIRouter(prefix="/appointments", tags=["appointments"])
 
 
 @router.get("/", response_model=list[AppointmentBase])
-async def get_appointments(request: Request, user_id: UUID | None = None) -> list[AppointmentBase]:
+async def get_appointments(
+    request: Request, user_id: UUID | None = None
+) -> list[AppointmentBase]:
     if user_id is None:
         if "access_token" not in request.cookies:
             logger.warning("Unauthorized appointments access attempt")
@@ -39,14 +42,16 @@ async def get_appointments(request: Request, user_id: UUID | None = None) -> lis
 
 
 @router.post("/create", response_model=AppointmentBase)
-async def create_appointment(appointment: AppointmentCreateRequest, request: Request) -> AppointmentBase:
+async def create_appointment(
+    appointment: AppointmentCreateRequest, request: Request
+) -> AppointmentBase:
     try:
         created_appointment = await srv_create_appointment(**appointment.model_dump())
         logger.info(f"Appointment created: {created_appointment.id}")
         return created_appointment
     except ValueError as e:
         logger.error(f"Appointment creation failed: {str(e)}")
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e)) from e
 
 
 @router.get("/{id}", response_model=AppointmentBase)
@@ -67,4 +72,4 @@ async def cancel_appointment(id: UUID) -> Response:
         return Response(None, status_code=HTTP_200_OK)
     except ValueError as e:
         logger.error(f"Appointment cancellation failed: {str(e)}")
-        raise HTTPException(status_code=HTTP_400_BAD_REQUEST, detail=str(e))
+        raise HTTPException(status_code=HTTP_400_BAD_REQUEST, detail=str(e)) from e

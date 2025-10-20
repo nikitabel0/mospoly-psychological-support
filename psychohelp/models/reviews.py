@@ -1,8 +1,8 @@
-from psychohelp.config.database import Base
-
-from sqlalchemy import Column, Text, ForeignKey, DateTime
-from sqlalchemy.orm import relationship
+from sqlalchemy import Column, DateTime, ForeignKey, Text
 from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.orm import relationship
+
+from psychohelp.config.database import Base
 
 
 class Review(Base):

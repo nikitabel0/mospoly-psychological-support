@@ -1,9 +1,15 @@
 from psychohelp.repositories.roles import (
-    get_roles_by_user_id as repo_get_roles_by_user_id,
-    add_roles_by_user_id as repo_add_roles_by_user_id,
-    delete_roles_by_user_id as repo_delete_roles_by_user_id,
-    UserRole,
     UUID,
+    UserRole,
+)
+from psychohelp.repositories.roles import (
+    add_roles_by_user_id as repo_add_roles_by_user_id,
+)
+from psychohelp.repositories.roles import (
+    delete_roles_by_user_id as repo_delete_roles_by_user_id,
+)
+from psychohelp.repositories.roles import (
+    get_roles_by_user_id as repo_get_roles_by_user_id,
 )
 
 

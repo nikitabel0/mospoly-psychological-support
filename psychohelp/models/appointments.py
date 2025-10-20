@@ -1,11 +1,11 @@
-from psychohelp.config.database import Base
-
-from sqlalchemy import Column, String, ForeignKey, Enum, DateTime
-from sqlalchemy.orm import relationship
-from sqlalchemy.dialects.postgresql import UUID
-
 import enum
 import uuid
+
+from sqlalchemy import Column, DateTime, Enum, ForeignKey, String
+from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.orm import relationship
+
+from psychohelp.config.database import Base
 
 
 class AppointmentType(enum.Enum):
