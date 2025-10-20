@@ -1,6 +1,3 @@
-
-
-
 # TODO: Uncomment when database and server are available
 # async def test_get_user(user):
 #     async with client() as c:

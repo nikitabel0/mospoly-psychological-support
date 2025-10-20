@@ -1,6 +1,3 @@
-
-
-
 # TODO: Uncomment when database and server are available
 # @pytest.fixture()
 # async def user():

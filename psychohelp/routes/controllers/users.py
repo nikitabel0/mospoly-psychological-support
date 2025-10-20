@@ -45,6 +45,7 @@ async def user(id: str) -> UserResponse:
     # Try to parse as UUID first
     try:
         from uuid import UUID as PyUUID
+
         uuid_id = PyUUID(id)
         user = await users.get_user_by_id(uuid_id)
     except ValueError:
