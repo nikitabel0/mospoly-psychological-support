@@ -33,9 +33,11 @@ class Appointment(Base):
     type = Column(Enum(AppointmentType), nullable=False)
     reason = Column(String(64), nullable=True)
     status = Column(Enum(AppointmentStatus), nullable=False)
-    remind_time = Column(DateTime, nullable=True)
-    last_change_time = Column(DateTime, nullable=False)
-    venue = Column(String(128), nullable=False)
+    scheduled_time = Column(DateTime, nullable=False, comment="Время назначенной встречи")
+    remind_time = Column(DateTime, nullable=True, comment="Время напоминания")
+    last_change_time = Column(DateTime, nullable=False, comment="Время последнего изменения")
+    venue = Column(String(128), nullable=False, comment="Место проведения встречи")
+    comment = Column(String(512), nullable=True, comment="Комментарий к записи")
 
     patient = relationship(
         "User", foreign_keys=[patient_id], back_populates="appointments_as_patient"
