@@ -7,3 +7,4 @@ from psychohelp import models
 class UserWithToken:
     user: models.User
     token: str
+    refresh_token: str

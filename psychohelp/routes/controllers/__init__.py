@@ -1,6 +1,6 @@
 from fastapi import Response
 
-from psychohelp.config import ACCESS_TOKEN_EXPIRE
+from psychohelp.config import ACCESS_TOKEN_EXPIRE, REFRESH_TOKEN_EXPIRE
 
 from datetime import datetime, timezone, timedelta
 
@@ -10,6 +10,16 @@ def set_token_in_cookie(response: Response, token: str):
         key="access_token",
         value=token,
         expires=datetime.now(timezone.utc) + timedelta(minutes=ACCESS_TOKEN_EXPIRE),
+        httponly=True,
+        secure=True,
+        samesite="None",
+    )
+
+def set_refresh_token_in_cookie(response: Response, refresh_token: str):
+    response.set_cookie(
+        key="refresh_token",
+        value=refresh_token,
+        expires=datetime.now(timezone.utc) + timedelta(minutes=REFRESH_TOKEN_EXPIRE),
         httponly=True,
         secure=True,
         samesite="None",

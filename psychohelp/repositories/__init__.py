@@ -21,6 +21,25 @@ def create_access_token(sub: str) -> str:
     )
     return encoded
 
+def create_refresh_token(sub: str) -> str:
+    expire = datetime.utcnow() + timedelta(minutes=REFRESH_TOKEN_EXPIRE)
+    now = datetime.now(timezone.utc)
+    encoded = jwt.encode(
+        {"sub": str(sub), "exp": expire, "iat": now},
+        SECRET_KEY,
+        algorithm=ALGORITHM,
+    )
+    return encoded
+
+def refresh_access_token(refresh_token: str) -> str:
+    decoded = jwt.decode(
+        refresh_token,
+        SECRET_KEY,
+        algorithms=[ALGORITHM],
+        options={"verify_iat": True, "verify_exp": True, "verify_signature": True},
+    )
+    sub = decoded["sub"]
+    return create_access_token(sub)
 
 def get_user_id_from_token(token: str) -> UUID:
     decoded = jwt.decode(
