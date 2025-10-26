@@ -89,7 +89,7 @@ async def create_appointment(
 
     return await repo_create_appointment(
         patient_id,
-        therapist_id,
+        therapist.user_id,
         type,
         reason,
         status,
