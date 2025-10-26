@@ -13,5 +13,6 @@ def set_token_in_cookie(response: Response, token: str):
         httponly=True,
         # fixme: поставил False в целях тестирования, потом нужно вернуть
         secure=False,
-        samesite="None",
+        # fixme: 
+        # samesite="None",
     )
