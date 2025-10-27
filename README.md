@@ -40,7 +40,10 @@ mospoly-psychological-support/
 │   │   ├── reviews.py
 │   │   ├── roles.py
 │   │   ├── therapists.py
-│   │   └── users.py
+│   │   └── users/               # Модульная структура users
+│   │       ├── exceptions.py    # Кастомные исключения
+│   │       ├── models.py        # Модели данных сервисного слоя
+│   │       └── users.py         # Логика работы с пользователями
 │   └── main.py                   # Точка входа приложения
 ├── tests/                        # Тесты
 │   ├── conftest.py
