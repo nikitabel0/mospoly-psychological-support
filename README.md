@@ -55,73 +55,81 @@ mospoly-psychological-support/
 ## Используемый стек
 
 ### Backend
-- **FastAPI** - современный веб-фреймворк для создания API
-- **SQLAlchemy** - ORM для работы с базой данных
-- **PostgreSQL** - реляционная база данных
-- **AsyncPG** - асинхронный драйвер PostgreSQL
-- **Alembic** - система миграций базы данных
-- **Pydantic** - валидация данных и сериализация
-- **JWT** - аутентификация через токены
-- **Passlib** - хеширование паролей
+
+-   **FastAPI** - современный веб-фреймворк для создания API
+-   **SQLAlchemy** - ORM для работы с базой данных
+-   **PostgreSQL** - реляционная база данных
+-   **AsyncPG** - асинхронный драйвер PostgreSQL
+-   **Alembic** - система миграций базы данных
+-   **Pydantic** - валидация данных и сериализация
+-   **JWT** - аутентификация через токены
+-   **Passlib** - хеширование паролей
 
 ### Инфраструктура
-- **Docker** - контейнеризация приложения
-- **Docker Compose** - оркестрация сервисов
-- **UV** - быстрый менеджер пакетов Python
-- **Uvicorn** - ASGI сервер для FastAPI
+
+-   **Docker** - контейнеризация приложения
+-   **Docker Compose** - оркестрация сервисов
+-   **UV** - быстрый менеджер пакетов Python
+-   **Uvicorn** - ASGI сервер для FastAPI
 
 ### Разработка
-- **Pytest** - фреймворк для тестирования
-- **Pytest-asyncio** - поддержка асинхронного тестирования
-- **Python logging** - стандартное логирование
+
+-   **Pytest** - фреймворк для тестирования
+-   **Pytest-asyncio** - поддержка асинхронного тестирования
+-   **Python logging** - стандартное логирование
 
 ## Установка и запуск
 
 ### Предварительные требования
 
-- Python 3.13
-- Docker и Docker Compose
-- UV
+-   Python 3.13
+-   Docker и Docker Compose
+-   UV
 
 ### Локальная разработка
 
 1. **Клонирование репозитория:**
-   ```
-   git clone https://github.com/nikitabel0/mospoly-psychological-support.git
-   cd mospoly-psychological-support
-   ```
+
+    ```
+    git clone https://github.com/nikitabel0/mospoly-psychological-support.git
+    cd mospoly-psychological-support
+    ```
 
 2. **Установка зависимостей:**
-   ```
-   uv pip install -e .
-   ```
+
+    ```
+    uv pip install -e .
+    ```
 
 3. **Запуск базы данных:**
-   ```
-   docker-compose up db -d
-   ```
+
+    ```
+    docker-compose up db -d
+    ```
 
 4. **Запуск приложения:**
-   ```
-   uv run python -m psychohelp.main
-   ```
+    ```
+    uv run python -m psychohelp.main
+    ```
 
 ### Docker (рекомендуется)
 
 1. **Запуск всех сервисов:**
-   ```
-   docker-compose up --build
-   ```
+
+    ```
+    docker-compose up --build
+    ```
 
 2. **Запуск в фоновом режиме:**
-   ```
-   docker-compose up -d --build
-   ```
+
+    ```
+    docker-compose up -d --build
+    ```
 
 3. **Остановка сервисов:**
-   ```
-   docker-compose down
-   ```
+    ```
+    docker-compose down
+    ```
 
 ## Базовые команды
 
@@ -226,11 +234,11 @@ export LOG_FILE=/path/to/logfile.log
 
 #### Уровни логирования
 
-- `DEBUG` - детальная информация для отладки (по умолчанию)
-- `INFO` - общая информация о работе приложения
-- `WARNING` - предупреждения
-- `ERROR` - ошибки
-- `CRITICAL` - критические ошибки
+-   `DEBUG` - детальная информация для отладки (по умолчанию)
+-   `INFO` - общая информация о работе приложения
+-   `WARNING` - предупреждения
+-   `ERROR` - ошибки
+-   `CRITICAL` - критические ошибки
 
 #### Пример запуска с настройками логирования
 

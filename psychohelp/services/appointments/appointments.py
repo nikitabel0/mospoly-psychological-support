@@ -10,8 +10,6 @@ from psychohelp.repositories.appointments import (
 )
 from psychohelp.repositories.therapists import get_therapist_by_id
 from psychohelp.repositories.users import get_user_by_id
-from psychohelp.repositories.roles import get_roles_by_user_id
-from psychohelp.models.roles import UserRole
 from psychohelp.models.appointments import AppointmentType, AppointmentStatus
 from psychohelp.services.appointments import exceptions as exc
 
@@ -75,9 +73,6 @@ async def create_appointment(
     if therapist is None:
         raise exc.TherapistNotFoundException(therapist_id)
 
-    roles = await get_roles_by_user_id(therapist_id)
-    if UserRole.Therapist not in map(lambda r: r.role, roles):
-        raise exc.TherapistRoleNotFoundException(therapist_id)
 
     match type:
         case AppointmentType.Offline:

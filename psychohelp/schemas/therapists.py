@@ -19,6 +19,19 @@ class TherapistBase(BaseModel):
         from_attributes = True
 
 
+class TherapistCreateRequest(BaseModel):
+    """Схема запроса на создание терапевта"""
+    user_id: UUID
+    experience: str
+    qualification: str
+    consult_areas: str
+    description: str
+    office: str
+    education: str
+    short_description: str
+    photo: str | None = None
+
+
 class TherapistResponse(BaseModel):
     """Схема ответа API с полной информацией о психологе"""
     id: UUID
@@ -30,7 +43,6 @@ class TherapistResponse(BaseModel):
     education: str
     short_description: str
     photo: str | None
-    # Данные из связанной модели User
     first_name: str
     middle_name: str | None
     last_name: str
@@ -41,15 +53,6 @@ class TherapistResponse(BaseModel):
 
     @classmethod
     def from_orm_therapist(cls, therapist):
-        """
-        Создание схемы из ORM модели Therapist с данными пользователя
-        
-        Args:
-            therapist: ORM модель Therapist с загруженным relationship user
-            
-        Returns:
-            TherapistResponse: Pydantic схема с данными психолога и пользователя
-        """
         return cls(
             id=therapist.id,
             experience=therapist.experience,
@@ -65,3 +68,4 @@ class TherapistResponse(BaseModel):
             last_name=therapist.user.last_name,
             phone_number=therapist.user.phone_number,
         )
+
