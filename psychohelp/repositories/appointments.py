@@ -26,9 +26,11 @@ async def create_appointment(
     type: AppointmentType,
     reason: str | None,
     status: AppointmentStatus,
+    scheduled_time: datetime,
     remind_time: datetime | None,
     last_change_time: datetime,
     venue: str,
+    comment: str | None = None,
 ):
     async with get_async_db() as session:
         new_appointment = Appointment(
@@ -37,9 +39,11 @@ async def create_appointment(
             type=type,
             reason=reason,
             status=status,
+            scheduled_time=scheduled_time,
             remind_time=remind_time,
             last_change_time=last_change_time,
             venue=venue,
+            comment=comment,
         )
 
         try:

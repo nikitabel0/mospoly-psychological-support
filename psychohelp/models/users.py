@@ -19,7 +19,7 @@ class User(Base):
     social_media = Column(String(50), nullable=True)
     password = Column(String(64), nullable=False)
 
-    roles = relationship("Role", back_populates="user")
+    roles = relationship("Role", secondary="users_roles", back_populates="users")
     appointments_as_patient = relationship(
         "Appointment", foreign_keys="[Appointment.patient_id]", back_populates="patient"
     )
