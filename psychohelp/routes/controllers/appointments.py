@@ -20,6 +20,8 @@ from psychohelp.services.appointments import (
 )
 from psychohelp.services.appointments import exceptions as exc
 from psychohelp.schemas.appointments import AppointmentBase, AppointmentCreateRequest
+from psychohelp.services.rbac import require_permission
+from psychohelp.constants import PermissionCode
 
 logger = get_logger(__name__)
 router = APIRouter(prefix="/appointments", tags=["appointments"])
@@ -43,7 +45,8 @@ async def get_appointments(request: Request, user_id: UUID | None = None) -> lis
 
 
 @router.post("/create", response_model=AppointmentBase)
-async def create_appointment(appointment: AppointmentCreateRequest, request: Request) -> AppointmentBase:
+@require_permission(PermissionCode.APPOINTMENTS_CREATE_OWN.value)
+async def create_appointment(request: Request, appointment: AppointmentCreateRequest) -> AppointmentBase:
     """Создать новую запись на прием к психологу"""
     try:
         created_appointment = await srv_create_appointment(**appointment.model_dump())
@@ -101,7 +104,8 @@ async def create_appointment(appointment: AppointmentCreateRequest, request: Req
 
 
 @router.get("/{id}", response_model=AppointmentBase)
-async def get_appointment(id: UUID) -> AppointmentBase:
+@require_permission(PermissionCode.APPOINTMENTS_VIEW_OWN.value)
+async def get_appointment(request: Request, id: UUID) -> AppointmentBase:
     """Получить информацию о конкретной записи"""
     appointment = await get_appointment_by_id(id)
     if appointment is None:
@@ -112,7 +116,8 @@ async def get_appointment(id: UUID) -> AppointmentBase:
 
 
 @router.put("/{id}/cancel")
-async def cancel_appointment(id: UUID) -> Response:
+@require_permission(PermissionCode.APPOINTMENTS_CANCEL_OWN.value)
+async def cancel_appointment(request: Request, id: UUID) -> Response:
     """Отменить запись на прием"""
     try:
         await cancel_appointment_by_id(id)

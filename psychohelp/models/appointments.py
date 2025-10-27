@@ -33,9 +33,9 @@ class Appointment(Base):
     type = Column(Enum(AppointmentType), nullable=False)
     reason = Column(String(64), nullable=True)
     status = Column(Enum(AppointmentStatus), nullable=False)
-    scheduled_time = Column(DateTime, nullable=False, comment="Время назначенной встречи")
-    remind_time = Column(DateTime, nullable=True, comment="Время напоминания")
-    last_change_time = Column(DateTime, nullable=False, comment="Время последнего изменения")
+    scheduled_time = Column(DateTime(timezone=True), nullable=False, comment="Время назначенной встречи")
+    remind_time = Column(DateTime(timezone=True), nullable=True, comment="Время напоминания")
+    last_change_time = Column(DateTime(timezone=True), nullable=False, comment="Время последнего изменения")
     venue = Column(String(128), nullable=False, comment="Место проведения встречи")
     comment = Column(String(512), nullable=True, comment="Комментарий к записи")
 

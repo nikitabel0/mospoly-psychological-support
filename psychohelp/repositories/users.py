@@ -1,9 +1,11 @@
 from psychohelp.models.users import User
+from psychohelp.models.roles import Role
 from psychohelp.config.database import get_async_db
 from psychohelp.repositories import get_user_id_from_token, UUID
 
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
+from sqlalchemy.orm import selectinload
 
 
 async def get_user_by_id(user_id: UUID):
@@ -52,7 +54,23 @@ async def create_user(
             )
 
             session.add(new_user)
+            await session.flush()
+            
+            user_role_result = await session.execute(
+                select(Role).where(Role.code == "user")
+            )
+            user_role = user_role_result.scalar_one_or_none()
+            
+            if user_role:
+                await session.execute(
+                    select(User)
+                    .options(selectinload(User.roles))
+                    .where(User.id == new_user.id)
+                )
+                new_user.roles.append(user_role)
+            
             await session.commit()
+            await session.refresh(new_user)
             return new_user
 
         except IntegrityError:
