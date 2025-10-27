@@ -1,6 +1,8 @@
 services:
   app:
     build: .
+    command: uv run python -m psychohelp.main
+    container_name: app
     ports:
       - "${APP_PORT:-8000}:8000"
     environment:
@@ -13,10 +15,9 @@ services:
       - db
     volumes:
       - .:/app
-    command: uv run python -m psychohelp.main
-
   db:
     image: postgres:17
+    container_name: db
     environment:
       - POSTGRES_USER=${POSTGRES_USER}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}

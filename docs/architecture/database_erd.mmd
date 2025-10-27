@@ -1,0 +1,76 @@
+---
+title: Database Entity Relationship Diagram
+---
+erDiagram
+    users ||--o{ roles : "has"
+    users ||--o| therapists : "can be"
+    users ||--o{ appointments : "as patient (patient_id)"
+    users ||--o{ appointments : "as therapist (therapist_id)"
+    appointments ||--o| reviews : "has"
+    appointments }o--|| AppointmentType : "has type"
+    appointments }o--|| AppointmentStatus : "has status"
+    roles }o--|| UserRole : "has role"
+
+    users {
+        UUID id PK "Primary Key, UUID"
+        VARCHAR(50) first_name "NOT NULL"
+        VARCHAR(50) middle_name "Nullable"
+        VARCHAR(50) last_name "NOT NULL"
+        VARCHAR(20) phone_number "NOT NULL"
+        VARCHAR(64) email UK "UNIQUE, NOT NULL"
+        VARCHAR(50) social_media "Nullable"
+        VARCHAR(64) password "NOT NULL, Hashed"
+    }
+
+    therapists {
+        UUID id PK,FK "PK + FK to users.id, CASCADE DELETE"
+        VARCHAR(64) experience "NOT NULL"
+        VARCHAR(128) qualification "NOT NULL"
+        VARCHAR(128) consult_areas "NOT NULL"
+        VARCHAR(256) description "NOT NULL"
+        VARCHAR(128) office "NOT NULL"
+        VARCHAR(127) education "NOT NULL"
+        VARCHAR(2047) short_description "NOT NULL"
+        VARCHAR(127) photo "Nullable"
+    }
+
+    appointments {
+        UUID id PK "Primary Key, UUID"
+        UUID patient_id FK "FK to users.id, CASCADE DELETE"
+        UUID therapist_id FK "FK to users.id, CASCADE DELETE"
+        ENUM type "AppointmentType (Online/Offline)"
+        VARCHAR(64) reason "Nullable"
+        ENUM status "AppointmentStatus"
+        TIMESTAMP remind_time "Nullable"
+        TIMESTAMP last_change_time "NOT NULL"
+        VARCHAR(128) venue "NOT NULL"
+    }
+
+    reviews {
+        UUID appointment_id PK,FK "PK + FK to appointments.id, CASCADE DELETE"
+        TIMESTAMP time "NOT NULL"
+        TEXT content "NOT NULL"
+    }
+
+    roles {
+        UUID user_id PK,FK "Part of Composite PK, FK to users.id, CASCADE DELETE"
+        ENUM role PK "Part of Composite PK, UserRole enum"
+    }
+
+    AppointmentType {
+        string Offline
+        string Online
+    }
+
+    AppointmentStatus {
+        string Approved "Initial state - approved by therapist"
+        string Accepted "Confirmed by patient"
+        string Cancelled "Cancelled by either party"
+        string Done "Completed appointment"
+    }
+
+    UserRole {
+        string Therapist "Therapist role"
+        string Administrator "Administrator role"
+    }
+
