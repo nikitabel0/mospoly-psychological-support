@@ -1,12 +1,9 @@
-"""
-Pydantic схемы для работы с ролями
-"""
-
 from pydantic import BaseModel
+
+from psychohelp.constants.rbac import RoleCode
 
 
 class RoleResponse(BaseModel):
-    """Схема ответа с информацией о роли"""
     code: str
     name: str
     description: str | None
@@ -16,11 +13,8 @@ class RoleResponse(BaseModel):
 
 
 class RoleAssignRequest(BaseModel):
-    """Схема запроса на назначение роли"""
-    role_code: str
+    role_code: RoleCode
 
 
 class RoleRemoveRequest(BaseModel):
-    """Схема запроса на удаление роли"""
-    role_code: str
-
+    role_code: RoleCode

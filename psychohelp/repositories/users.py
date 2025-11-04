@@ -8,20 +8,20 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import selectinload
 
 
-async def get_user_by_id(user_id: UUID):
+async def get_user_by_id(user_id: UUID) -> User | None:
     async with get_async_db() as session:
         result = await session.execute(select(User).filter(User.id == user_id))
 
     return result.scalar_one_or_none()
 
 
-async def get_user_by_email(email: str):
+async def get_user_by_email(email: str) -> User | None:
     async with get_async_db() as session:
         result = await session.execute(select(User).filter(User.email == email))
     return result.scalar_one_or_none()
 
 
-async def get_user_by_token(token: str):
+async def get_user_by_token(token: str) -> User | None:
     id = get_user_id_from_token(token)
     return await get_user_by_id(id)
 
@@ -34,7 +34,7 @@ async def create_user(
     hashed_password: str,
     middle_name: str | None = None,
     social_media: str | None = None,
-):
+) -> User:
     async with get_async_db() as session:
         try:
             existing_user = await session.execute(

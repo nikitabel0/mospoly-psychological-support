@@ -7,8 +7,8 @@ from sqlalchemy.dialects.postgresql import UUID
 import uuid
 
 
-class Therapist(Base):
-    __tablename__ = "therapists"
+class Psychologist(Base):
+    __tablename__ = "psychologists"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
     user_id = Column(
@@ -27,4 +27,6 @@ class Therapist(Base):
     short_description = Column(String(2047), nullable=False)
     photo = Column(String(127), nullable=True)
 
-    user = relationship("User", back_populates="therapist_info")
+    user = relationship("User", back_populates="psychologist_info")
+    appointments = relationship("Appointment", back_populates="psychologist")
+

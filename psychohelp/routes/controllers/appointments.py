@@ -9,19 +9,20 @@ from starlette.status import (
     HTTP_500_INTERNAL_SERVER_ERROR,
 )
 
+from uuid import UUID
+
 from psychohelp.config.logging import get_logger
-from psychohelp.services.appointments import (
+from psychohelp.services.appointments.appointments import (
     get_appointment_by_id,
     create_appointment as srv_create_appointment,
     cancel_appointment_by_id,
     get_appointments_by_token,
     get_appointments_by_user_id,
-    UUID,
 )
 from psychohelp.services.appointments import exceptions as exc
 from psychohelp.schemas.appointments import AppointmentBase, AppointmentCreateRequest
-from psychohelp.services.rbac import require_permission
-from psychohelp.constants import PermissionCode
+from psychohelp.services.rbac.permissions import require_permission
+from psychohelp.constants.rbac import PermissionCode
 
 logger = get_logger(__name__)
 router = APIRouter(prefix="/appointments", tags=["appointments"])
@@ -45,7 +46,7 @@ async def get_appointments(request: Request, user_id: UUID | None = None) -> lis
 
 
 @router.post("/create", response_model=AppointmentBase)
-@require_permission(PermissionCode.APPOINTMENTS_CREATE_OWN.value)
+@require_permission(PermissionCode.APPOINTMENTS_CREATE_OWN)
 async def create_appointment(request: Request, appointment: AppointmentCreateRequest) -> AppointmentBase:
     """Создать новую запись на прием к психологу"""
     try:
@@ -73,16 +74,16 @@ async def create_appointment(request: Request, appointment: AppointmentCreateReq
             status_code=HTTP_404_NOT_FOUND,
             detail=f"Пациент не найден"
         )
-    
-    except exc.TherapistNotFoundException as e:
-        logger.error(f"Therapist not found: {e.therapist_id}")
+
+    except exc.PsychologistNotFoundException as e:
+        logger.error(f"Psychologist not found: {e.psychologist_id}")
         raise HTTPException(
             status_code=HTTP_404_NOT_FOUND,
             detail=f"Психолог не найден"
         )
     
-    except exc.TherapistRoleNotFoundException as e:
-        logger.error(f"User does not have therapist role: {e.user_id}")
+    except exc.PsychologistRoleNotFoundException as e:
+        logger.error(f"User does not have psychologist role: {e.user_id}")
         raise HTTPException(
             status_code=HTTP_422_UNPROCESSABLE_ENTITY,
             detail="Указанный пользователь не является психологом"
@@ -104,7 +105,7 @@ async def create_appointment(request: Request, appointment: AppointmentCreateReq
 
 
 @router.get("/{id}", response_model=AppointmentBase)
-@require_permission(PermissionCode.APPOINTMENTS_VIEW_OWN.value)
+@require_permission(PermissionCode.APPOINTMENTS_VIEW_OWN)
 async def get_appointment(request: Request, id: UUID) -> AppointmentBase:
     """Получить информацию о конкретной записи"""
     appointment = await get_appointment_by_id(id)
@@ -116,7 +117,7 @@ async def get_appointment(request: Request, id: UUID) -> AppointmentBase:
 
 
 @router.put("/{id}/cancel")
-@require_permission(PermissionCode.APPOINTMENTS_CANCEL_OWN.value)
+@require_permission(PermissionCode.APPOINTMENTS_CANCEL_OWN)
 async def cancel_appointment(request: Request, id: UUID) -> Response:
     """Отменить запись на прием"""
     try:

@@ -12,7 +12,7 @@ from datetime import datetime
 class AppointmentBase(BaseModel):
     id: UUID
     patient_id: UUID
-    therapist_id: UUID
+    psychologist_id: UUID
     type: AppointmentType
     reason: str | None = None
     status: AppointmentStatus
@@ -28,7 +28,7 @@ class AppointmentBase(BaseModel):
 
 class AppointmentCreateRequest(BaseModel):
     patient_id: UUID
-    therapist_id: UUID
+    psychologist_id: UUID
     type: AppointmentType
     scheduled_time: datetime
     reason: str | None = None

@@ -1,12 +1,7 @@
-"""
-Enumы для RBAC системы
-"""
-
 from enum import Enum
 
 
 class PermissionCode(str, Enum):
-    """Коды прав доступа в системе"""
     
     # Appointments permissions
     APPOINTMENTS_CREATE_OWN = "appointments.create_own"
@@ -28,9 +23,9 @@ class PermissionCode(str, Enum):
     # Users permissions
     USERS_EDIT_OWN_PROFILE = "users.edit_own_profile"
     
-    # Therapists permissions
-    THERAPISTS_EDIT_OWN_PROFILE = "therapists.edit_own_profile"
-    THERAPISTS_MANAGE = "therapists.manage"
+    # Psychologists permissions
+    PSYCHOLOGISTS_EDIT_OWN_PROFILE = "psychologists.edit_own_profile"
+    PSYCHOLOGISTS_MANAGE = "psychologists.manage"
     
     # Statistics permissions
     STATISTICS_VIEW = "statistics.view"
@@ -50,10 +45,8 @@ class PermissionCode(str, Enum):
 
 
 class RoleCode(str, Enum):
-    """Коды ролей в системе"""
-    
     USER = "user"
     PSYCHOLOGIST = "psychologist"
-    HEAD_OF_PSYCHOLOGISTS = "head_of_psychologists"
+    ADMIN = "admin"
     CONTENT_MANAGER = "content_manager"
 

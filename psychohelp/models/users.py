@@ -23,9 +23,4 @@ class User(Base):
     appointments_as_patient = relationship(
         "Appointment", foreign_keys="[Appointment.patient_id]", back_populates="patient"
     )
-    appointments_as_therapist = relationship(
-        "Appointment",
-        foreign_keys="[Appointment.therapist_id]",
-        back_populates="therapist",
-    )
-    therapist_info = relationship("Therapist", back_populates="user", uselist=False)
+    psychologist_info = relationship("Psychologist", back_populates="user", uselist=False)

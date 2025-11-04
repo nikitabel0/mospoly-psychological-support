@@ -12,7 +12,7 @@ from uuid import UUID
 from datetime import datetime
 
 
-async def get_appointment_by_id(appointment_id: UUID):
+async def get_appointment_by_id(appointment_id: UUID) -> Appointment | None:
     async with get_async_db() as session:
         result = await session.execute(
             select(Appointment).filter(Appointment.id == appointment_id)
@@ -22,7 +22,7 @@ async def get_appointment_by_id(appointment_id: UUID):
 
 async def create_appointment(
     patient_id: UUID,
-    therapist_id: UUID,
+    psychologist_id: UUID,
     type: AppointmentType,
     reason: str | None,
     status: AppointmentStatus,
@@ -31,11 +31,11 @@ async def create_appointment(
     last_change_time: datetime,
     venue: str,
     comment: str | None = None,
-):
+) -> Appointment:
     async with get_async_db() as session:
         new_appointment = Appointment(
             patient_id=patient_id,
-            therapist_id=therapist_id,
+            psychologist_id=psychologist_id,
             type=type,
             reason=reason,
             status=status,
@@ -56,7 +56,7 @@ async def create_appointment(
         return new_appointment
 
 
-async def cancel_appointment_by_id(appointment_id: UUID):
+async def cancel_appointment_by_id(appointment_id: UUID) -> Appointment:
     async with get_async_db() as session:
         appointment = await session.execute(
             select(Appointment).filter(Appointment.id == appointment_id)
@@ -81,12 +81,12 @@ async def cancel_appointment_by_id(appointment_id: UUID):
         return appointment
 
 
-async def get_appointments_by_user_id(user_id: UUID):
+async def get_appointments_by_user_id(user_id: UUID) -> list[Appointment]:
     async with get_async_db() as session:
         result = await session.execute(
             select(Appointment).filter(
                 (Appointment.patient_id == user_id)
-                | (Appointment.therapist_id == user_id)
+                | (Appointment.psychologist_id == user_id)
             )
         )
         return result.scalars().all()

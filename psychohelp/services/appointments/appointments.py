@@ -1,4 +1,5 @@
 from datetime import datetime, timezone
+from uuid import UUID
 
 from psychohelp.repositories import get_user_id_from_token
 from psychohelp.repositories.appointments import (
@@ -6,34 +7,33 @@ from psychohelp.repositories.appointments import (
     create_appointment as repo_create_appointment,
     cancel_appointment_by_id as repo_cancel_appointment_by_id,
     get_appointments_by_user_id as repo_get_appointments_by_user_id,
-    UUID,
 )
-from psychohelp.repositories.therapists import get_therapist_by_id
+from psychohelp.repositories.psychologists.psychologists import get_psychologist_by_id
 from psychohelp.repositories.users import get_user_by_id
-from psychohelp.models.appointments import AppointmentType, AppointmentStatus
+from psychohelp.models.appointments import Appointment, AppointmentType, AppointmentStatus
 from psychohelp.services.appointments import exceptions as exc
 
 
-async def get_appointment_by_id(appointment_id: UUID):
+async def get_appointment_by_id(appointment_id: UUID) -> Appointment | None:
     return await repo_get_appointment_by_id(appointment_id)
 
 
 async def create_appointment(
     patient_id: UUID,
-    therapist_id: UUID,
+    psychologist_id: UUID,
     type: AppointmentType,
     scheduled_time: datetime,
     reason: str | None = None,
     remind_time: datetime | None = None,
     venue: str | None = None,
     comment: str | None = None,
-):
+) -> Appointment:
     """
     Создание записи на прием к психологу
     
     Args:
         patient_id: ID пациента
-        therapist_id: ID психолога
+        psychologist_id: ID психолога
         type: Тип консультации (онлайн/офлайн)
         scheduled_time: Время назначенной встречи
         reason: Причина обращения
@@ -43,8 +43,7 @@ async def create_appointment(
         
     Raises:
         PatientNotFoundException: Если пациент не найден
-        TherapistNotFoundException: Если психолог не найден
-        TherapistRoleNotFoundException: Если пользователь не имеет роли психолога
+        PsychologistNotFoundException: Если психолог не найден
         VenueRequiredException: Если не указано место для онлайн встречи
         InvalidScheduledTimeException: Если время записи в прошлом
         InvalidRemindTimeException: Если время напоминания некорректно
@@ -69,14 +68,14 @@ async def create_appointment(
     if patient is None:
         raise exc.PatientNotFoundException(patient_id)
 
-    therapist = await get_therapist_by_id(therapist_id)
-    if therapist is None:
-        raise exc.TherapistNotFoundException(therapist_id)
+    psychologist = await get_psychologist_by_id(psychologist_id)
+    if psychologist is None:
+        raise exc.PsychologistNotFoundException(psychologist_id)
 
 
     match type:
         case AppointmentType.Offline:
-            venue = therapist.office
+            venue = psychologist.office
         
         case AppointmentType.Online:
             if venue is None:
@@ -84,7 +83,7 @@ async def create_appointment(
 
     return await repo_create_appointment(
         patient_id,
-        therapist.user_id,
+        psychologist.id,
         type,
         reason,
         status,
@@ -96,15 +95,15 @@ async def create_appointment(
     )
 
 
-async def cancel_appointment_by_id(appointment_id: UUID):
+async def cancel_appointment_by_id(appointment_id: UUID) -> Appointment:
     return await repo_cancel_appointment_by_id(appointment_id)
 
 
-async def get_appointments_by_user_id(user_id: UUID):
+async def get_appointments_by_user_id(user_id: UUID) -> list[Appointment]:
     return await repo_get_appointments_by_user_id(user_id)
 
 
-async def get_appointments_by_token(token: str):
+async def get_appointments_by_token(token: str) -> list[Appointment]:
     id = get_user_id_from_token(token)
     return await get_appointments_by_user_id(id)
 
