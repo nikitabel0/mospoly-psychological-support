@@ -1,3 +1,4 @@
+from psychohelp.constants.rbac import RoleCode
 from psychohelp.models.users import User
 from psychohelp.models.roles import Role
 from psychohelp.config.database import get_async_db
@@ -57,7 +58,7 @@ async def create_user(
             await session.flush()
             
             user_role_result = await session.execute(
-                select(Role).where(Role.code == "user")
+                select(Role).where(Role.code == RoleCode.USER.value)
             )
             user_role = user_role_result.scalar_one_or_none()
             

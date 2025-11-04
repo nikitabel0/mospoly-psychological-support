@@ -4,7 +4,8 @@ from sqlalchemy import select
 from sqlalchemy.orm import selectinload
 
 from psychohelp.config.database import get_async_db
-from psychohelp.models import User, Role
+from psychohelp.models.users import User
+from psychohelp.models.roles import Role
 from psychohelp.repositories.rbac.exceptions import (
     UserNotFoundException,
     RoleNotFoundException,
