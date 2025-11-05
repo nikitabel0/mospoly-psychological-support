@@ -182,9 +182,21 @@ def upgrade() -> None:
     # ========================================
     # STEP 1: Modify appointments table
     # ========================================
-    # Add new columns
-    op.add_column('appointments', sa.Column('scheduled_time', sa.DateTime(timezone=True), nullable=False, comment='Время назначенной встречи'))
+    # Add new columns (scheduled_time as nullable first, then we'll make it NOT NULL)
+    op.add_column('appointments', sa.Column('scheduled_time', sa.DateTime(timezone=True), nullable=True, comment='Время назначенной встречи'))
     op.add_column('appointments', sa.Column('comment', sa.String(length=512), nullable=True, comment='Комментарий к записи'))
+    
+    # Fill scheduled_time with default value for existing rows (use current timestamp)
+    conn.execute(sa.text("""
+        UPDATE appointments 
+        SET scheduled_time = CURRENT_TIMESTAMP 
+        WHERE scheduled_time IS NULL
+    """))
+    
+    # Now make scheduled_time NOT NULL
+    op.alter_column('appointments', 'scheduled_time',
+                    existing_type=sa.DateTime(timezone=True),
+                    nullable=False)
     
     # Convert existing datetime columns to timezone-aware
     op.alter_column('appointments', 'remind_time',
@@ -207,13 +219,31 @@ def upgrade() -> None:
     # ========================================
     # STEP 2: Modify and rename therapists table to psychologists
     # ========================================
-    # Add user_id column and indices
-    op.add_column('therapists', sa.Column('user_id', sa.UUID(), nullable=False))
+    # First, drop all FK constraints that reference therapists.id
+    op.drop_constraint('appointments_therapist_id_fkey', 'appointments', type_='foreignkey')
+    op.drop_constraint('therapists_id_fkey', 'therapists', type_='foreignkey')
+    
+    # Add user_id column as nullable first (for existing rows after downgrade)
+    op.add_column('therapists', sa.Column('user_id', sa.UUID(), nullable=True))
+    
+    # Fill user_id with id value for existing rows (in old schema, id was the user_id)
+    conn.execute(sa.text("UPDATE therapists SET user_id = id WHERE user_id IS NULL"))
+    
+    # Generate new UUIDs for id column (to separate psychologist id from user id)
+    conn.execute(sa.text("UPDATE therapists SET id = gen_random_uuid()"))
+    
+    # Now make user_id NOT NULL and create indices
+    op.alter_column('therapists', 'user_id',
+                    existing_type=sa.UUID(),
+                    nullable=False)
+    
+    # Drop indices if they exist (from previous rollback) and recreate them
+    conn.execute(sa.text("DROP INDEX IF EXISTS ix_therapists_id"))
+    conn.execute(sa.text("DROP INDEX IF EXISTS ix_therapists_user_id"))
     op.create_index(op.f('ix_therapists_id'), 'therapists', ['id'], unique=False)
     op.create_index(op.f('ix_therapists_user_id'), 'therapists', ['user_id'], unique=True)
     
-    # Drop old FK constraint and create new one
-    op.drop_constraint('therapists_id_fkey', 'therapists', type_='foreignkey')
+    # Create new FK constraint for user_id
     op.create_foreign_key('therapists_user_id_fkey', 'therapists', 'users', ['user_id'], ['id'], ondelete='CASCADE')
     
     # Rename therapists table to psychologists
@@ -226,12 +256,22 @@ def upgrade() -> None:
     # Rename foreign key constraint name
     op.execute('ALTER TABLE psychologists RENAME CONSTRAINT therapists_user_id_fkey TO psychologists_user_id_fkey')
     
-    # Rename foreign key constraint in appointments table
-    op.drop_constraint('appointments_therapist_id_fkey', 'appointments', type_='foreignkey')
+    # Update appointments to reference new psychologist ids
+    # Update appointments.therapist_id to reference new psychologists.id (via user_id mapping)
+    conn.execute(sa.text("""
+        UPDATE appointments a
+        SET therapist_id = p.id
+        FROM psychologists p
+        WHERE a.therapist_id = p.user_id
+    """))
+    
+    # Rename the column
     op.alter_column('appointments', 'therapist_id',
                     new_column_name='psychologist_id',
                     existing_type=sa.UUID(),
                     existing_nullable=False)
+    
+    # Create new FK
     op.create_foreign_key('appointments_psychologist_id_fkey', 'appointments', 'psychologists', ['psychologist_id'], ['id'], ondelete='CASCADE')
     
     # ========================================
@@ -412,13 +452,24 @@ def downgrade() -> None:
     
     # Revert appointments foreign key changes (psychologist_id -> therapist_id)
     op.drop_constraint('appointments_psychologist_id_fkey', 'appointments', type_='foreignkey')
+    
+    # Revert psychologists table rename
+    op.rename_table('psychologists', 'therapists')
+    
+    # Now update appointments to reference the new therapists table structure
+    # First, update therapist_id in appointments to match the user_id from therapists
+    conn.execute(sa.text("""
+        UPDATE appointments a
+        SET psychologist_id = t.user_id
+        FROM therapists t
+        WHERE a.psychologist_id = t.id
+    """))
+    
+    # Rename the column
     op.alter_column('appointments', 'psychologist_id',
                     new_column_name='therapist_id',
                     existing_type=sa.UUID(),
                     existing_nullable=False)
-    
-    # Revert psychologists table rename and changes
-    op.rename_table('psychologists', 'therapists')
     
     # Rename indices back after table rename
     op.execute('ALTER INDEX ix_psychologists_id RENAME TO ix_therapists_id')
@@ -427,11 +478,23 @@ def downgrade() -> None:
     # Rename foreign key constraint back
     op.execute('ALTER TABLE therapists RENAME CONSTRAINT psychologists_user_id_fkey TO therapists_user_id_fkey')
     
+    # Migrate data: copy user_id to id (preserving the relationship)
+    # First drop constraints and indices
     op.drop_constraint('therapists_user_id_fkey', 'therapists', type_='foreignkey')
-    op.create_foreign_key('therapists_id_fkey', 'therapists', 'users', ['id'], ['id'], ondelete='CASCADE')
-    op.drop_index(op.f('ix_therapists_user_id'), table_name='therapists')
+    op.drop_constraint('therapists_pkey', 'therapists', type_='primary')
     op.drop_index(op.f('ix_therapists_id'), table_name='therapists')
+    op.drop_index(op.f('ix_therapists_user_id'), table_name='therapists')
+    
+    # Update id to be equal to user_id
+    conn.execute(sa.text("UPDATE therapists SET id = user_id"))
+    
+    # Drop user_id column
     op.drop_column('therapists', 'user_id')
+    
+    # Recreate constraints with id as FK to users
+    op.create_foreign_key('therapists_id_fkey', 'therapists', 'users', ['id'], ['id'], ondelete='CASCADE')
+    op.create_primary_key('therapists_pkey', 'therapists', ['id'])
+    op.create_index(op.f('ix_therapists_id'), 'therapists', ['id'], unique=False)
     
     # Recreate appointments foreign key with old name
     op.create_foreign_key('appointments_therapist_id_fkey', 'appointments', 'therapists', ['therapist_id'], ['id'], ondelete='CASCADE')

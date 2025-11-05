@@ -12,6 +12,7 @@ sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 
 # Импортируем наши модели и конфигурацию
 from psychohelp.config.database import Base, config
+import psychohelp.models  # noqa: F401 - Import all models for Alembic
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
