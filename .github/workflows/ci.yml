@@ -75,9 +75,7 @@ jobs:
     
     - name: Run tests
       run: |
-        echo "Tests are currently commented out as they require database setup"
-        echo "To enable tests, uncomment them in tests/test_users.py and tests/conftest.py"
-        echo "Then ensure database and server are running before tests"
+        uv run pytest tests/ -v
       env:
         DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_db
         POSTGRES_USER: postgres
