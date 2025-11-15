@@ -1,11 +1,3 @@
-"""Initial migration
-
-Revision ID: d789ac864327
-Revises:
-Create Date: 2025-10-16 21:23:41.729547
-
-"""
-
 from collections.abc import Sequence
 
 import sqlalchemy as sa
