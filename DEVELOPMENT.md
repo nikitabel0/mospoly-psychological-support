@@ -48,38 +48,6 @@ make fix
 2. **Форматирование** - проверка форматирования кода
 3. **Тесты** - запуск тестов с PostgreSQL
 
-### Конфигурация Ruff
-
-Настройки Ruff находятся в `pyproject.toml`:
-
-```toml
-[tool.ruff]
-target-version = "py38"
-line-length = 88
-
-[tool.ruff.lint]
-select = [
-    "E",  # pycodestyle errors
-    "W",  # pycodestyle warnings
-    "F",  # pyflakes
-    "I",  # isort
-    "B",  # flake8-bugbear
-    "C4", # flake8-comprehensions
-    "UP", # pyupgrade
-]
-ignore = [
-    "E501",  # line too long, handled by black
-    "B008",  # do not perform function calls in argument defaults
-    "C901",  # too complex
-]
-
-[tool.ruff.lint.per-file-ignores]
-"__init__.py" = ["F401"]
-
-[tool.ruff.lint.isort]
-known-first-party = ["psychohelp"]
-```
-
 ### Рекомендации
 
 1. **Перед коммитом** всегда запускайте `make check`
