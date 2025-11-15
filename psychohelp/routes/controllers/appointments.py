@@ -45,6 +45,19 @@ async def get_appointments(request: Request) -> list[AppointmentBase]:
 @require_permission(PermissionCode.APPOINTMENTS_CREATE_OWN)
 async def create_appointment(request: Request, appointment: AppointmentCreateRequest) -> AppointmentBase:
     """Создать новую запись на прием к психологу"""
+    # Проверяем, что пользователь создает запись от своего имени
+    token = request.cookies.get("access_token")
+    if not token:
+        raise HTTPException(status_code=HTTP_401_UNAUTHORIZED, detail="Пользователь не авторизован")
+    
+    current_user_id = get_user_id_from_token(token)
+    if appointment.patient_id != current_user_id:
+        logger.warning(f"User {current_user_id} attempted to create appointment for another user {appointment.patient_id}")
+        raise HTTPException(
+            status_code=HTTP_403_FORBIDDEN,
+            detail="Вы можете создавать записи только от своего имени"
+        )
+    
     try:
         created_appointment = await srv_create_appointment(**appointment.model_dump())
         logger.info(f"Appointment created: {created_appointment.id}")
