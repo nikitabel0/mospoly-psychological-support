@@ -15,7 +15,7 @@ class User(Base):
     middle_name = Column(String(50), nullable=True)
     last_name = Column(String(50), nullable=False)
     phone_number = Column(String(20), nullable=False)
-    email = Column(String(64), unique=True)
+    email = Column(String(64), unique=True, nullable=False)
     social_media = Column(String(50), nullable=True)
     password = Column(String(64), nullable=False)
 
