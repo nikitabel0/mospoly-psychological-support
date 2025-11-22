@@ -6,18 +6,19 @@ from psychohelp.repositories.users import (
     create_user,
     UUID,
 )
+from psychohelp.models.users import User
 from psychohelp.services.users import exceptions, models
 
 
-async def get_user_by_id(user_id: UUID):
+async def get_user_by_id(user_id: UUID) -> User | None:
     return await repo_get_user_by_id(user_id)
 
 
-async def get_user_by_email(email: str):
+async def get_user_by_email(email: str) -> User | None:
     return await repo_get_user_by_email(email)
 
 
-async def get_user_by_token(token: str):
+async def get_user_by_token(token: str) -> User | None:
     return await repo_get_user_by_token(token)
 
 
@@ -29,7 +30,7 @@ async def register_user(
     password: str,
     middle_name: str | None = None,
     social_media: str | None = None,
-):
+) -> tuple[User, str]:
     new_user = await create_user(
         first_name,
         last_name,
@@ -42,7 +43,7 @@ async def register_user(
     return new_user, create_access_token(new_user.id)
 
 
-async def login_user(email: str, password: str):
+async def login_user(email: str, password: str) -> models.UserWithToken:
     user = await repo_get_user_by_email(email)
     if user is None:
         raise exceptions.UserNotFound()

@@ -1,17 +1,7 @@
-# Импортируем все модели для регистрации в SQLAlchemy
-from .users import User
-from .therapists import Therapist
-from .appointments import Appointment, AppointmentType, AppointmentStatus
-from .reviews import Review
-from .roles import Role, UserRole
+from psychohelp.models import users
+from psychohelp.models import roles
+from psychohelp.models import permissions
+from psychohelp.models import psychologists
+from psychohelp.models import appointments
+from psychohelp.models import reviews
 
-__all__ = [
-    "User",
-    "Therapist", 
-    "Appointment",
-    "AppointmentType",
-    "AppointmentStatus",
-    "Review",
-    "Role",
-    "UserRole",
-]
