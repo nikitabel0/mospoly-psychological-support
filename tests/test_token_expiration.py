@@ -35,7 +35,6 @@ class TestTokenExpiration:
             decoded_user_id = get_user_id_from_token(token)
             assert str(decoded_user_id) == user_id
 
-
             # Ждем чуть больше времени жизни токена
             time.sleep(3)
 
