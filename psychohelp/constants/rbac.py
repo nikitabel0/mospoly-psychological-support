@@ -2,7 +2,6 @@ from enum import Enum
 
 
 class PermissionCode(str, Enum):
-    
     # Appointments permissions
     APPOINTMENTS_CREATE_OWN = "appointments.create_own"
     APPOINTMENTS_VIEW_OWN = "appointments.view_own"
@@ -15,29 +14,29 @@ class PermissionCode(str, Enum):
     APPOINTMENTS_VIEW_ALL = "appointments.view_all"
     APPOINTMENTS_EDIT_ALL = "appointments.edit_all"
     APPOINTMENTS_DELETE_ALL = "appointments.delete_all"
-    
+
     # Reviews permissions
     REVIEWS_CREATE_OWN = "reviews.create_own"
     REVIEWS_VIEW_ALL = "reviews.view_all"
-    
+
     # Users permissions
     USERS_EDIT_OWN_PROFILE = "users.edit_own_profile"
-    
+
     # Psychologists permissions
     PSYCHOLOGISTS_EDIT_OWN_PROFILE = "psychologists.edit_own_profile"
     PSYCHOLOGISTS_MANAGE = "psychologists.manage"
-    
+
     # Statistics permissions
     STATISTICS_VIEW = "statistics.view"
-    
+
     # FAQ permissions
     FAQ_EDIT = "faq.edit"
-    
+
     # Materials permissions
     MATERIALS_CREATE = "materials.create"
     MATERIALS_EDIT = "materials.edit"
     MATERIALS_DELETE = "materials.delete"
-    
+
     # Tests permissions
     TESTS_CREATE = "tests.create"
     TESTS_EDIT = "tests.edit"

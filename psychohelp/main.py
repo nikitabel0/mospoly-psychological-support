@@ -6,6 +6,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.ext.asyncio import AsyncEngine, create_async_engine
 
+import psychohelp.models  # noqa: F401 - Import all models for SQLAlchemy
 from psychohelp.config.database import (
     RESET_DB_ON_START,
     Base,
@@ -13,7 +14,7 @@ from psychohelp.config.database import (
 )
 from psychohelp.config.logging import get_logger, setup_logging
 from psychohelp.routes import api_router
-from psychohelp.models import users, psychologists, appointments, reviews, roles, permissions
+
 log_level = os.getenv("LOG_LEVEL", "DEBUG")
 log_file_path = os.getenv("LOG_FILE")
 

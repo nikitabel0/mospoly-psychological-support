@@ -1,3 +1,4 @@
+from psychohelp.models.users import User
 from psychohelp.repositories import create_access_token, hash_password, verify_password
 from psychohelp.repositories.users import (
     UUID,
@@ -12,7 +13,6 @@ from psychohelp.repositories.users import (
 from psychohelp.repositories.users import (
     get_user_by_token as repo_get_user_by_token,
 )
-from psychohelp.models.users import User
 from psychohelp.services.users import exceptions, models
 
 

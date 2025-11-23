@@ -2,20 +2,26 @@ from uuid import UUID
 
 from psychohelp.models.psychologists import Psychologist
 from psychohelp.repositories.psychologists.psychologists import (
-    get_psychologist_by_id as repo_get_psychologist_by_id,
-    get_psychologists as repo_get_psychologists,
     create_psychologist as repo_create_psychologist,
+)
+from psychohelp.repositories.psychologists.psychologists import (
     delete_psychologist as repo_delete_psychologist,
+)
+from psychohelp.repositories.psychologists.psychologists import (
+    get_psychologist_by_id as repo_get_psychologist_by_id,
+)
+from psychohelp.repositories.psychologists.psychologists import (
+    get_psychologists as repo_get_psychologists,
 )
 
 
 async def get_psychologist_by_id(psychologist_id: UUID) -> Psychologist | None:
     """
     Получить психолога по ID
-    
+
     Args:
         psychologist_id: UUID психолога
-        
+
     Returns:
         Psychologist | None: ORM модель психолога или None если не найден
     """
@@ -25,11 +31,11 @@ async def get_psychologist_by_id(psychologist_id: UUID) -> Psychologist | None:
 async def get_psychologists(skip: int = 0, take: int = 10) -> list[Psychologist]:
     """
     Получить список всех психологов с пагинацией
-    
+
     Args:
         skip: Количество записей для пропуска
         take: Количество записей для получения
-        
+
     Returns:
         list[Psychologist]: Список ORM моделей психологов
     """

@@ -1,16 +1,22 @@
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from uuid import UUID
 
+from psychohelp.models.appointments import Appointment, AppointmentStatus, AppointmentType
 from psychohelp.repositories import get_user_id_from_token
 from psychohelp.repositories.appointments import (
-    get_appointment_by_id as repo_get_appointment_by_id,
-    create_appointment as repo_create_appointment,
     cancel_appointment_by_id as repo_cancel_appointment_by_id,
+)
+from psychohelp.repositories.appointments import (
+    create_appointment as repo_create_appointment,
+)
+from psychohelp.repositories.appointments import (
+    get_appointment_by_id as repo_get_appointment_by_id,
+)
+from psychohelp.repositories.appointments import (
     get_appointments_by_user_id as repo_get_appointments_by_user_id,
 )
 from psychohelp.repositories.psychologists.psychologists import get_psychologist_by_id
 from psychohelp.repositories.users import get_user_by_id
-from psychohelp.models.appointments import Appointment, AppointmentType, AppointmentStatus
 from psychohelp.services.appointments import exceptions as exc
 
 
@@ -30,7 +36,7 @@ async def create_appointment(
 ) -> Appointment:
     """
     Создание записи на прием к психологу
-    
+
     Args:
         patient_id: ID пациента
         psychologist_id: ID психолога
@@ -40,7 +46,7 @@ async def create_appointment(
         remind_time: Время напоминания
         venue: Место встречи (для онлайн)
         comment: Комментарий к записи
-        
+
     Raises:
         PatientNotFoundException: Если пациент не найден
         PsychologistNotFoundException: Если психолог не найден
@@ -48,19 +54,19 @@ async def create_appointment(
         InvalidScheduledTimeException: Если время записи в прошлом
         InvalidRemindTimeException: Если время напоминания некорректно
     """
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     status = AppointmentStatus.Accepted
 
-    scheduled_time_utc = scheduled_time.astimezone(timezone.utc) if scheduled_time.tzinfo else scheduled_time.replace(tzinfo=timezone.utc)
+    scheduled_time_utc = scheduled_time.astimezone(UTC) if scheduled_time.tzinfo else scheduled_time.replace(tzinfo=UTC)
     if scheduled_time_utc <= now:
         raise exc.InvalidScheduledTimeException(scheduled_time)
 
     if remind_time is not None:
-        remind_time_utc = remind_time.astimezone(timezone.utc) if remind_time.tzinfo else remind_time.replace(tzinfo=timezone.utc)
-        
+        remind_time_utc = remind_time.astimezone(UTC) if remind_time.tzinfo else remind_time.replace(tzinfo=UTC)
+
         if remind_time_utc <= now:
             raise exc.InvalidRemindTimeException(remind_time, "время напоминания не может быть в прошлом")
-        
+
         if remind_time_utc >= scheduled_time_utc:
             raise exc.InvalidRemindTimeException(remind_time, "время напоминания должно быть раньше времени встречи")
 
@@ -76,7 +82,7 @@ async def create_appointment(
     match type:
         case AppointmentType.Offline:
             venue = psychologist.office
-        
+
         case AppointmentType.Online:
             if venue is None:
                 raise exc.VenueRequiredException()

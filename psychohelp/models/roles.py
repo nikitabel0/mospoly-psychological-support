@@ -1,13 +1,13 @@
+import uuid
+from datetime import UTC, datetime
+
+from sqlalchemy import Column, DateTime, ForeignKey, String, Table
+from sqlalchemy import Enum as SQLEnum
+from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.orm import relationship
+
 from psychohelp.config.database import Base
 from psychohelp.constants.rbac import RoleCode
-
-from sqlalchemy import Column, String, Table, ForeignKey, DateTime, Enum as SQLEnum
-from sqlalchemy.orm import relationship
-from sqlalchemy.dialects.postgresql import UUID
-from datetime import datetime, timezone
-
-import uuid
-
 
 roles_permissions = Table(
     'roles_permissions',
@@ -21,7 +21,7 @@ users_roles = Table(
     Base.metadata,
     Column('user_id', UUID(as_uuid=True), ForeignKey('users.id', ondelete='CASCADE'), primary_key=True),
     Column('role_id', UUID(as_uuid=True), ForeignKey('roles.id', ondelete='CASCADE'), primary_key=True),
-    Column('assigned_at', DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    Column('assigned_at', DateTime(timezone=True), default=lambda: datetime.now(UTC))
 )
 
 

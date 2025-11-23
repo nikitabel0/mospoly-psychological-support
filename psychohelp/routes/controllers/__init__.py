@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 from fastapi import Response
 
@@ -9,10 +9,10 @@ def set_token_in_cookie(response: Response, token: str):
     response.set_cookie(
         key="access_token",
         value=token,
-        expires=datetime.now(timezone.utc) + timedelta(minutes=ACCESS_TOKEN_EXPIRE),
+        expires=datetime.now(UTC) + timedelta(minutes=ACCESS_TOKEN_EXPIRE),
         httponly=True,
         # fixme: поставил False в целях тестирования, потом нужно вернуть
         secure=False,
-        # fixme: 
+        # fixme:
         # samesite="None",
     )
