@@ -34,10 +34,11 @@ async def assign_role(user_id: UUID, request: RoleAssignRequest) -> dict[str, st
         raise HTTPException(status_code=HTTP_404_NOT_FOUND, detail=str(e)) from e
 
     except Exception as e:
-        logger.exception(f"Unexpected error assigning role '{request.role_code.value}' to user {user_id}: {str(e)}")
+        logger.exception(
+            f"Unexpected error assigning role '{request.role_code.value}' to user {user_id}: {str(e)}"
+        )
         raise HTTPException(
-            status_code=HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Не удалось назначить роль"
+            status_code=HTTP_500_INTERNAL_SERVER_ERROR, detail="Не удалось назначить роль"
         ) from e
 
 
@@ -57,8 +58,9 @@ async def remove_role(user_id: UUID, request: RoleRemoveRequest) -> dict[str, st
         raise HTTPException(status_code=HTTP_404_NOT_FOUND, detail=str(e)) from e
 
     except Exception as e:
-        logger.exception(f"Unexpected error removing role '{request.role_code.value}' from user {user_id}: {str(e)}")
+        logger.exception(
+            f"Unexpected error removing role '{request.role_code.value}' from user {user_id}: {str(e)}"
+        )
         raise HTTPException(
-            status_code=HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Не удалось удалить роль"
+            status_code=HTTP_500_INTERNAL_SERVER_ERROR, detail="Не удалось удалить роль"
         ) from e

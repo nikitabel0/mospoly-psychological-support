@@ -35,9 +35,7 @@ async def get_appointments(request: Request, user_id: UUID | None = None) -> lis
     if user_id is None:
         if "access_token" not in request.cookies:
             logger.warning("Unauthorized appointments access attempt")
-            raise HTTPException(
-                HTTP_401_UNAUTHORIZED, detail="Пользователь не авторизован"
-            )
+            raise HTTPException(HTTP_401_UNAUTHORIZED, detail="Пользователь не авторизован")
         token = request.cookies["access_token"]
         logger.info("Fetching appointments by token")
         return await get_appointments_by_token(token)
@@ -48,7 +46,9 @@ async def get_appointments(request: Request, user_id: UUID | None = None) -> lis
 
 @router.post("/create", response_model=AppointmentBase)
 @require_permission(PermissionCode.APPOINTMENTS_CREATE_OWN)
-async def create_appointment(request: Request, appointment: AppointmentCreateRequest) -> AppointmentBase:
+async def create_appointment(
+    request: Request, appointment: AppointmentCreateRequest
+) -> AppointmentBase:
     """Создать новую запись на прием к психологу"""
     try:
         created_appointment = await srv_create_appointment(**appointment.model_dump())
@@ -58,50 +58,40 @@ async def create_appointment(request: Request, appointment: AppointmentCreateReq
     except exc.InvalidScheduledTimeException as e:
         logger.error(f"Invalid scheduled time: {e.scheduled_time}")
         raise HTTPException(
-            status_code=HTTP_400_BAD_REQUEST,
-            detail="Время записи не может быть в прошлом"
+            status_code=HTTP_400_BAD_REQUEST, detail="Время записи не может быть в прошлом"
         ) from e
 
     except exc.InvalidRemindTimeException as e:
         logger.error(f"Invalid remind time: {e.remind_time}, reason: {e.reason}")
         raise HTTPException(
-            status_code=HTTP_400_BAD_REQUEST,
-            detail=f"Некорректное время напоминания: {e.reason}"
+            status_code=HTTP_400_BAD_REQUEST, detail=f"Некорректное время напоминания: {e.reason}"
         ) from e
 
     except exc.PatientNotFoundException as e:
         logger.error(f"Patient not found: {e.patient_id}")
-        raise HTTPException(
-            status_code=HTTP_404_NOT_FOUND,
-            detail="Пациент не найден"
-        ) from e
+        raise HTTPException(status_code=HTTP_404_NOT_FOUND, detail="Пациент не найден") from e
 
     except exc.PsychologistNotFoundException as e:
         logger.error(f"Psychologist not found: {e.psychologist_id}")
-        raise HTTPException(
-            status_code=HTTP_404_NOT_FOUND,
-            detail="Психолог не найден"
-        ) from e
+        raise HTTPException(status_code=HTTP_404_NOT_FOUND, detail="Психолог не найден") from e
 
     except exc.PsychologistRoleNotFoundException as e:
         logger.error(f"User does not have psychologist role: {e.user_id}")
         raise HTTPException(
             status_code=HTTP_422_UNPROCESSABLE_ENTITY,
-            detail="Указанный пользователь не является психологом"
+            detail="Указанный пользователь не является психологом",
         ) from e
 
     except exc.VenueRequiredException:
         logger.error("Venue required for online appointment")
         raise HTTPException(
-            status_code=HTTP_400_BAD_REQUEST,
-            detail="Необходимо указать место для онлайн встречи"
+            status_code=HTTP_400_BAD_REQUEST, detail="Необходимо указать место для онлайн встречи"
         ) from None
 
     except Exception as e:
         logger.exception(f"Unexpected error during appointment creation: {str(e)}")
         raise HTTPException(
-            status_code=HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Не удалось создать запись на прием"
+            status_code=HTTP_500_INTERNAL_SERVER_ERROR, detail="Не удалось создать запись на прием"
         ) from e
 
 

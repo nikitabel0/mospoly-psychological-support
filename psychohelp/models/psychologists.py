@@ -29,4 +29,3 @@ class Psychologist(Base):
 
     user = relationship("User", back_populates="psychologist_info")
     appointments = relationship("Appointment", back_populates="psychologist")
-

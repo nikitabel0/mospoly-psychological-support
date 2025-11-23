@@ -33,10 +33,7 @@ async def get_psychologists(skip: int = 0, take: int = 10) -> list[Psychologist]
     """
     async with get_async_db() as session:
         query = await session.execute(
-            select(Psychologist)
-            .options(joinedload(Psychologist.user))
-            .offset(skip)
-            .limit(take)
+            select(Psychologist).options(joinedload(Psychologist.user)).offset(skip).limit(take)
         )
 
     result = query.scalars().all()
@@ -47,9 +44,7 @@ async def create_psychologist(user_id: UUID, psychologist_data: dict) -> Psychol
     async with get_async_db() as session:
         async with session.begin():
             user_result = await session.execute(
-                select(User)
-                .options(selectinload(User.roles))
-                .where(User.id == user_id)
+                select(User).options(selectinload(User.roles)).where(User.id == user_id)
             )
             user = user_result.scalar_one_or_none()
 
@@ -117,8 +112,7 @@ async def delete_psychologist(psychologist_id: UUID) -> bool:
             user = psychologist.user
 
             psychologist_role = next(
-                (role for role in user.roles if role.code == RoleCode.PSYCHOLOGIST.value),
-                None
+                (role for role in user.roles if role.code == RoleCode.PSYCHOLOGIST.value), None
             )
             if psychologist_role:
                 user.roles.remove(psychologist_role)
@@ -127,4 +121,3 @@ async def delete_psychologist(psychologist_id: UUID) -> bool:
             await session.commit()
 
     return True
-

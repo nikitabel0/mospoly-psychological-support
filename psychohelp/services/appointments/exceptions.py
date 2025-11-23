@@ -38,4 +38,3 @@ class AppointmentAlreadyCancelledException(Exception):
     def __init__(self, appointment_id):
         self.appointment_id = appointment_id
         super().__init__(f"Запись на прием с ID {appointment_id} уже отменена")
-

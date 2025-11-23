@@ -14,9 +14,7 @@ from psychohelp.models.appointments import (
 
 async def get_appointment_by_id(appointment_id: UUID) -> Appointment | None:
     async with get_async_db() as session:
-        result = await session.execute(
-            select(Appointment).filter(Appointment.id == appointment_id)
-        )
+        result = await session.execute(select(Appointment).filter(Appointment.id == appointment_id))
     return result.scalar_one_or_none()
 
 
@@ -85,8 +83,7 @@ async def get_appointments_by_user_id(user_id: UUID) -> list[Appointment]:
     async with get_async_db() as session:
         result = await session.execute(
             select(Appointment).filter(
-                (Appointment.patient_id == user_id)
-                | (Appointment.psychologist_id == user_id)
+                (Appointment.patient_id == user_id) | (Appointment.psychologist_id == user_id)
             )
         )
         return result.scalars().all()

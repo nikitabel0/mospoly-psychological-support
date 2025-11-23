@@ -38,9 +38,7 @@ async def create_user(
 ) -> User:
     async with get_async_db() as session:
         try:
-            existing_user = await session.execute(
-                select(User).filter(User.email == email)
-            )
+            existing_user = await session.execute(select(User).filter(User.email == email))
             if existing_user.scalar_one_or_none():
                 raise ValueError("Пользователь с таким email уже существует")
 
@@ -64,9 +62,7 @@ async def create_user(
 
             if user_role:
                 await session.execute(
-                    select(User)
-                    .options(selectinload(User.roles))
-                    .where(User.id == new_user.id)
+                    select(User).options(selectinload(User.roles)).where(User.id == new_user.id)
                 )
                 new_user.roles.append(user_role)
 

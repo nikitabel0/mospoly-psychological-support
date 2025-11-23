@@ -48,4 +48,3 @@ class RoleCode(str, Enum):
     PSYCHOLOGIST = "psychologist"
     ADMIN = "admin"
     CONTENT_MANAGER = "content_manager"
-

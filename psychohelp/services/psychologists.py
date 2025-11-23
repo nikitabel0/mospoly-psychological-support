@@ -49,4 +49,3 @@ async def create_psychologist(user_id: UUID, psychologist_data: dict) -> Psychol
 
 async def delete_psychologist(psychologist_id: UUID) -> bool:
     return await repo_delete_psychologist(psychologist_id)
-

@@ -17,9 +17,7 @@ async def get_user_permissions(user_id: UUID) -> list[str]:
     async with get_async_db() as session:
         result = await session.execute(
             select(User)
-            .options(
-                selectinload(User.roles).selectinload(Role.permissions)
-            )
+            .options(selectinload(User.roles).selectinload(Role.permissions))
             .where(User.id == user_id)
         )
         user = result.scalar_one_or_none()
@@ -39,18 +37,14 @@ async def assign_role_to_user(user_id: UUID, role_code: RoleCode) -> bool:
     async with get_async_db() as session:
         async with session.begin():
             user_result = await session.execute(
-                select(User)
-                .options(selectinload(User.roles))
-                .where(User.id == user_id)
+                select(User).options(selectinload(User.roles)).where(User.id == user_id)
             )
             user = user_result.scalar_one_or_none()
 
             if user is None:
                 raise UserNotFoundException(user_id)
 
-            role_result = await session.execute(
-                select(Role).where(Role.code == role_code)
-            )
+            role_result = await session.execute(select(Role).where(Role.code == role_code))
             role = role_result.scalar_one_or_none()
 
             if role is None:
@@ -69,9 +63,7 @@ async def remove_role_from_user(user_id: UUID, role_code: RoleCode) -> bool:
     async with get_async_db() as session:
         async with session.begin():
             user_result = await session.execute(
-                select(User)
-                .options(selectinload(User.roles))
-                .where(User.id == user_id)
+                select(User).options(selectinload(User.roles)).where(User.id == user_id)
             )
             user = user_result.scalar_one_or_none()
 
@@ -87,5 +79,3 @@ async def remove_role_from_user(user_id: UUID, role_code: RoleCode) -> bool:
             await session.commit()
 
             return True
-
-

@@ -67,13 +67,14 @@ def require_permission(permission_code: PermissionCode):
         async def protected_endpoint(request: Request):
             ...
     """
+
     def decorator(func):
         @wraps(func)
         async def wrapper(*args, **kwargs):
             request = None
 
-            if 'request' in kwargs:
-                request = kwargs['request']
+            if "request" in kwargs:
+                request = kwargs["request"]
             else:
                 for arg in args:
                     if isinstance(arg, Request):
@@ -82,24 +83,19 @@ def require_permission(permission_code: PermissionCode):
 
             if request is None:
                 raise HTTPException(
-                    status_code=HTTP_401_UNAUTHORIZED,
-                    detail="Request object not found"
+                    status_code=HTTP_401_UNAUTHORIZED, detail="Request object not found"
                 )
 
             token = request.cookies.get("access_token")
             if not token:
-                raise HTTPException(
-                    status_code=HTTP_401_UNAUTHORIZED,
-                    detail="Не авторизован"
-                )
+                raise HTTPException(status_code=HTTP_401_UNAUTHORIZED, detail="Не авторизован")
 
             # Получаем user_id из токена
             try:
                 user_id = get_user_id_from_token(token)
             except Exception:
                 raise HTTPException(
-                    status_code=HTTP_401_UNAUTHORIZED,
-                    detail="Невалидный токен"
+                    status_code=HTTP_401_UNAUTHORIZED, detail="Невалидный токен"
                 ) from None
 
             # Проверяем право
@@ -107,11 +103,11 @@ def require_permission(permission_code: PermissionCode):
             if not has_permission:
                 raise HTTPException(
                     status_code=HTTP_403_FORBIDDEN,
-                    detail=f"Недостаточно прав: требуется {permission_code.value}"
+                    detail=f"Недостаточно прав: требуется {permission_code.value}",
                 )
 
             return await func(*args, **kwargs)
 
         return wrapper
-    return decorator
 
+    return decorator

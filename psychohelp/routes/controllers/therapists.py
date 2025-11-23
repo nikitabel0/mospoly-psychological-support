@@ -45,7 +45,7 @@ async def get_psychologist(psychologist_id: UUID) -> PsychologistResponse:
 @router.get("/", response_model=list[PsychologistResponse])
 async def get_psychologists(
     skip: int = Query(0, ge=0, description="Количество записей для пропуска"),
-    take: int = Query(10, gt=0, le=100, description="Количество записей для получения")
+    take: int = Query(10, gt=0, le=100, description="Количество записей для получения"),
 ) -> list[PsychologistResponse]:
     """Получить список всех психологов с пагинацией"""
     logger.info(f"Fetching psychologists: skip={skip}, take={take}")
@@ -57,7 +57,9 @@ async def get_psychologists(
 
 @router.post("/", response_model=PsychologistResponse, status_code=HTTP_201_CREATED)
 @require_permission(PermissionCode.PSYCHOLOGISTS_MANAGE)
-async def create_psychologist_endpoint(request: Request, data: PsychologistCreateRequest) -> PsychologistResponse:
+async def create_psychologist_endpoint(
+    request: Request, data: PsychologistCreateRequest
+) -> PsychologistResponse:
     try:
         psychologist_data = data.model_dump(exclude={"user_id"})
         psychologist = await create_psychologist(data.user_id, psychologist_data)
@@ -87,4 +89,3 @@ async def delete_psychologist_endpoint(request: Request, psychologist_id: UUID) 
 
     logger.info(f"Psychologist deleted: {psychologist_id}")
     return {"message": "Psychologist successfully deleted"}
-

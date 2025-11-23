@@ -57,18 +57,28 @@ async def create_appointment(
     now = datetime.now(UTC)
     status = AppointmentStatus.Accepted
 
-    scheduled_time_utc = scheduled_time.astimezone(UTC) if scheduled_time.tzinfo else scheduled_time.replace(tzinfo=UTC)
+    scheduled_time_utc = (
+        scheduled_time.astimezone(UTC)
+        if scheduled_time.tzinfo
+        else scheduled_time.replace(tzinfo=UTC)
+    )
     if scheduled_time_utc <= now:
         raise exc.InvalidScheduledTimeException(scheduled_time)
 
     if remind_time is not None:
-        remind_time_utc = remind_time.astimezone(UTC) if remind_time.tzinfo else remind_time.replace(tzinfo=UTC)
+        remind_time_utc = (
+            remind_time.astimezone(UTC) if remind_time.tzinfo else remind_time.replace(tzinfo=UTC)
+        )
 
         if remind_time_utc <= now:
-            raise exc.InvalidRemindTimeException(remind_time, "время напоминания не может быть в прошлом")
+            raise exc.InvalidRemindTimeException(
+                remind_time, "время напоминания не может быть в прошлом"
+            )
 
         if remind_time_utc >= scheduled_time_utc:
-            raise exc.InvalidRemindTimeException(remind_time, "время напоминания должно быть раньше времени встречи")
+            raise exc.InvalidRemindTimeException(
+                remind_time, "время напоминания должно быть раньше времени встречи"
+            )
 
     patient = await get_user_by_id(patient_id)
     if patient is None:
@@ -77,7 +87,6 @@ async def create_appointment(
     psychologist = await get_psychologist_by_id(psychologist_id)
     if psychologist is None:
         raise exc.PsychologistNotFoundException(psychologist_id)
-
 
     match type:
         case AppointmentType.Offline:
@@ -112,4 +121,3 @@ async def get_appointments_by_user_id(user_id: UUID) -> list[Appointment]:
 async def get_appointments_by_token(token: str) -> list[Appointment]:
     id = get_user_id_from_token(token)
     return await get_appointments_by_user_id(id)
-
