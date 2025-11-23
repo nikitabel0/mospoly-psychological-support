@@ -1,3 +1,4 @@
+import re
 from uuid import UUID
 
 from fastapi import APIRouter, HTTPException, Request, Response
@@ -38,9 +39,22 @@ async def user_token(request: Request) -> UserResponse:
     return user
 
 
-@router.get("/user/{id}", response_model=UserResponse)
-async def user(id: UUID) -> UserResponse:
-    user = await users.get_user_by_id(id)
+@router.get("/user/{identifier}", response_model=UserResponse)
+async def user(identifier: str) -> UserResponse:
+    # Проверяем, является ли identifier валидным UUID
+    try:
+        user_id = UUID(identifier)
+        user = await users.get_user_by_id(user_id)
+    except ValueError:
+        # Если не UUID, проверяем, является ли это валидным email
+        email_pattern = r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$"
+        if not re.match(email_pattern, identifier):
+            raise HTTPException(
+                status_code=HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="Идентификатор должен быть валидным UUID или email",
+            ) from None
+        user = await users.get_user_by_email(identifier)
+
     if user is None:
         raise HTTPException(status_code=HTTP_404_NOT_FOUND, detail="Пользователь не найден")
 
