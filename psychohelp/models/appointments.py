@@ -27,20 +27,22 @@ class Appointment(Base):
     patient_id = Column(
         UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False
     )
-    therapist_id = Column(
-        UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False
+    psychologist_id = Column(
+        UUID(as_uuid=True), ForeignKey("psychologists.id", ondelete="CASCADE"), nullable=False
     )
     type = Column(Enum(AppointmentType), nullable=False)
     reason = Column(String(64), nullable=True)
     status = Column(Enum(AppointmentStatus), nullable=False)
-    remind_time = Column(DateTime, nullable=True)
-    last_change_time = Column(DateTime, nullable=False)
-    venue = Column(String(128), nullable=False)
+    scheduled_time = Column(DateTime(timezone=True), nullable=False, comment="Время назначенной встречи")
+    remind_time = Column(DateTime(timezone=True), nullable=True, comment="Время напоминания")
+    last_change_time = Column(DateTime(timezone=True), nullable=False, comment="Время последнего изменения")
+    venue = Column(String(128), nullable=False, comment="Место проведения встречи")
+    comment = Column(String(512), nullable=True, comment="Комментарий к записи")
 
     patient = relationship(
         "User", foreign_keys=[patient_id], back_populates="appointments_as_patient"
     )
-    therapist = relationship(
-        "User", foreign_keys=[therapist_id], back_populates="appointments_as_therapist"
+    psychologist = relationship(
+        "Psychologist", foreign_keys=[psychologist_id], back_populates="appointments"
     )
     review = relationship("Review", back_populates="appointment", uselist=False)

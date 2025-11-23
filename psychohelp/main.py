@@ -13,7 +13,7 @@ from psychohelp.config.database import (
 )
 from psychohelp.config.logging import get_logger, setup_logging
 from psychohelp.routes import api_router
-
+from psychohelp.models import users, psychologists, appointments, reviews, roles, permissions
 log_level = os.getenv("LOG_LEVEL", "DEBUG")
 log_file_path = os.getenv("LOG_FILE")
 

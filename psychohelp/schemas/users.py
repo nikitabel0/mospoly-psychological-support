@@ -12,7 +12,7 @@ class UserCreateRequest(BaseModel):
     middle_name: str | None = Field(None, min_length=1, max_length=50)
     last_name: str = Field(min_length=1, max_length=50)
     phone_number: PhoneNumber
-    email: EmailStr | None = None
+    email: EmailStr
     social_media: str | None = Field(None, max_length=50)
     password: str = Field(min_length=8, max_length=256)
 
@@ -23,7 +23,7 @@ class UserBase(BaseModel):
     middle_name: str | None = Field(None, min_length=1, max_length=50)
     last_name: str = Field(min_length=1, max_length=50)
     phone_number: PhoneNumber
-    email: EmailStr | None = None
+    email: EmailStr
     social_media: str | None = Field(None, max_length=50)
     password: str
 
@@ -34,7 +34,7 @@ class UserResponse(BaseModel):
     middle_name: str | None = Field(None, min_length=1, max_length=50)
     last_name: str = Field(min_length=1, max_length=50)
     phone_number: PhoneNumber
-    email: EmailStr | None = None
+    email: EmailStr
     social_media: str | None = Field(None, max_length=50)
 
     class Config:

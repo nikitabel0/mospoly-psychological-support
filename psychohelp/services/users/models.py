@@ -1,9 +1,9 @@
 from dataclasses import dataclass
 
-from psychohelp import models
+from psychohelp.models.users import User
 
 
 @dataclass(frozen=True, slots=True)
 class UserWithToken:
-    user: models.User
+    user: User
     token: str
