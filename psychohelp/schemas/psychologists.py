@@ -65,4 +65,3 @@ class PsychologistResponse(BaseModel):
             last_name=psychologist.user.last_name,
             phone_number=psychologist.user.phone_number,
         )
-

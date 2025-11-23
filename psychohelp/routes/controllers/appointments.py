@@ -1,5 +1,6 @@
-from fastapi import HTTPException, APIRouter, Response, Request
+from uuid import UUID
 
+from fastapi import APIRouter, HTTPException, Request, Response
 from starlette.status import (
     HTTP_200_OK,
     HTTP_400_BAD_REQUEST,
@@ -9,20 +10,20 @@ from starlette.status import (
     HTTP_500_INTERNAL_SERVER_ERROR,
 )
 
-from uuid import UUID
-
 from psychohelp.config.logging import get_logger
+from psychohelp.constants.rbac import PermissionCode
+from psychohelp.schemas.appointments import AppointmentBase, AppointmentCreateRequest
+from psychohelp.services.appointments import exceptions as exc
 from psychohelp.services.appointments.appointments import (
-    get_appointment_by_id,
-    create_appointment as srv_create_appointment,
     cancel_appointment_by_id,
+    get_appointment_by_id,
     get_appointments_by_token,
     get_appointments_by_user_id,
 )
-from psychohelp.services.appointments import exceptions as exc
-from psychohelp.schemas.appointments import AppointmentBase, AppointmentCreateRequest
+from psychohelp.services.appointments.appointments import (
+    create_appointment as srv_create_appointment,
+)
 from psychohelp.services.rbac.permissions import require_permission
-from psychohelp.constants.rbac import PermissionCode
 
 logger = get_logger(__name__)
 router = APIRouter(prefix="/appointments", tags=["appointments"])
@@ -34,9 +35,7 @@ async def get_appointments(request: Request, user_id: UUID | None = None) -> lis
     if user_id is None:
         if "access_token" not in request.cookies:
             logger.warning("Unauthorized appointments access attempt")
-            raise HTTPException(
-                HTTP_401_UNAUTHORIZED, detail="Пользователь не авторизован"
-            )
+            raise HTTPException(HTTP_401_UNAUTHORIZED, detail="Пользователь не авторизован")
         token = request.cookies["access_token"]
         logger.info("Fetching appointments by token")
         return await get_appointments_by_token(token)
@@ -47,61 +46,53 @@ async def get_appointments(request: Request, user_id: UUID | None = None) -> lis
 
 @router.post("/create", response_model=AppointmentBase)
 @require_permission(PermissionCode.APPOINTMENTS_CREATE_OWN)
-async def create_appointment(request: Request, appointment: AppointmentCreateRequest) -> AppointmentBase:
+async def create_appointment(
+    request: Request, appointment: AppointmentCreateRequest
+) -> AppointmentBase:
     """Создать новую запись на прием к психологу"""
     try:
         created_appointment = await srv_create_appointment(**appointment.model_dump())
         logger.info(f"Appointment created: {created_appointment.id}")
         return created_appointment
-    
+
     except exc.InvalidScheduledTimeException as e:
         logger.error(f"Invalid scheduled time: {e.scheduled_time}")
         raise HTTPException(
-            status_code=HTTP_400_BAD_REQUEST,
-            detail="Время записи не может быть в прошлом"
-        )
-    
+            status_code=HTTP_400_BAD_REQUEST, detail="Время записи не может быть в прошлом"
+        ) from e
+
     except exc.InvalidRemindTimeException as e:
         logger.error(f"Invalid remind time: {e.remind_time}, reason: {e.reason}")
         raise HTTPException(
-            status_code=HTTP_400_BAD_REQUEST,
-            detail=f"Некорректное время напоминания: {e.reason}"
-        )
-    
+            status_code=HTTP_400_BAD_REQUEST, detail=f"Некорректное время напоминания: {e.reason}"
+        ) from e
+
     except exc.PatientNotFoundException as e:
         logger.error(f"Patient not found: {e.patient_id}")
-        raise HTTPException(
-            status_code=HTTP_404_NOT_FOUND,
-            detail=f"Пациент не найден"
-        )
+        raise HTTPException(status_code=HTTP_404_NOT_FOUND, detail="Пациент не найден") from e
 
     except exc.PsychologistNotFoundException as e:
         logger.error(f"Psychologist not found: {e.psychologist_id}")
-        raise HTTPException(
-            status_code=HTTP_404_NOT_FOUND,
-            detail=f"Психолог не найден"
-        )
-    
+        raise HTTPException(status_code=HTTP_404_NOT_FOUND, detail="Психолог не найден") from e
+
     except exc.PsychologistRoleNotFoundException as e:
         logger.error(f"User does not have psychologist role: {e.user_id}")
         raise HTTPException(
             status_code=HTTP_422_UNPROCESSABLE_ENTITY,
-            detail="Указанный пользователь не является психологом"
-        )
-    
+            detail="Указанный пользователь не является психологом",
+        ) from e
+
     except exc.VenueRequiredException:
         logger.error("Venue required for online appointment")
         raise HTTPException(
-            status_code=HTTP_400_BAD_REQUEST,
-            detail="Необходимо указать место для онлайн встречи"
-        )
-    
+            status_code=HTTP_400_BAD_REQUEST, detail="Необходимо указать место для онлайн встречи"
+        ) from None
+
     except Exception as e:
         logger.exception(f"Unexpected error during appointment creation: {str(e)}")
         raise HTTPException(
-            status_code=HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Не удалось создать запись на прием"
-        )
+            status_code=HTTP_500_INTERNAL_SERVER_ERROR, detail="Не удалось создать запись на прием"
+        ) from e
 
 
 @router.get("/{id}", response_model=AppointmentBase)
@@ -126,4 +117,4 @@ async def cancel_appointment(request: Request, id: UUID) -> Response:
         return Response(None, status_code=HTTP_200_OK)
     except ValueError as e:
         logger.error(f"Appointment cancellation failed: {str(e)}")
-        raise HTTPException(status_code=HTTP_400_BAD_REQUEST, detail=str(e))
+        raise HTTPException(status_code=HTTP_400_BAD_REQUEST, detail=str(e)) from e

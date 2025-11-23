@@ -1,6 +1,6 @@
 import pytest
 
-from . import client
+from tests import client
 
 
 @pytest.fixture()

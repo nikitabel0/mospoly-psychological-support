@@ -1,9 +1,8 @@
-from fastapi import APIRouter, HTTPException
-from fastapi.responses import FileResponse
-
+import os
 from mimetypes import guess_type
 
-import os
+from fastapi import APIRouter, HTTPException
+from fastapi.responses import FileResponse
 
 router = APIRouter(tags=["images"])
 

@@ -1,0 +1,85 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  lint-and-test:
+    runs-on: ubuntu-latest
+    
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: test_db
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.13'
+    
+    - name: Install uv
+      uses: astral-sh/setup-uv@v2
+      with:
+        version: "latest"
+    
+    - name: Install dependencies
+      run: |
+        uv sync --dev
+        uv add ruff pytest pytest-asyncio
+    
+    - name: Run Ruff linter
+      run: |
+        uv run ruff check .
+    
+    - name: Run Ruff formatter (check)
+      run: |
+        uv run ruff format --check .
+    
+    - name: Start application server
+      run: |
+        # Wait for PostgreSQL to be ready
+        sleep 5
+        
+        # Run database migrations
+        uv run alembic upgrade head
+        
+        # Start the application server in background
+        uv run python -m psychohelp.main &
+        
+        # Wait for server to start
+        sleep 10
+        
+        # Check if server is running
+        curl -f http://localhost:8000/health || echo "Server not ready yet"
+      env:
+        DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_db
+        POSTGRES_USER: postgres
+        POSTGRES_PASSWORD: postgres
+        POSTGRES_DB: test_db
+        POSTGRES_HOST: localhost
+        POSTGRES_PORT: 5432
+        RESET_DB_ON_START: "true"
+    
+    - name: Run tests
+      run: |
+        uv run pytest tests/ -v
+      env:
+        DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_db
+        POSTGRES_USER: postgres
+        POSTGRES_PASSWORD: postgres
+        POSTGRES_DB: test_db
+        POSTGRES_HOST: localhost
+        POSTGRES_PORT: 5432

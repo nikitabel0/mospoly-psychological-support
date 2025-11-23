@@ -1,25 +1,19 @@
 import os
 from pathlib import Path
 
+import uvicorn
 from fastapi import FastAPI
-from fastapi.responses import Response
 from fastapi.middleware.cors import CORSMiddleware
+from sqlalchemy.ext.asyncio import AsyncEngine, create_async_engine
 
-from sqlalchemy.ext.asyncio import create_async_engine
-from sqlalchemy.ext.asyncio import AsyncEngine
-
+import psychohelp.models  # noqa: F401 - Import all models for SQLAlchemy
 from psychohelp.config.database import (
-    Base,
     RESET_DB_ON_START,
-    RESET_COOKIE_ON_START,
+    Base,
     config,
 )
-from psychohelp.config.logging import setup_logging, get_logger
+from psychohelp.config.logging import get_logger, setup_logging
 from psychohelp.routes import api_router
-
-from psychohelp.models import users, psychologists, appointments, reviews, roles, permissions
-
-import uvicorn
 
 log_level = os.getenv("LOG_LEVEL", "DEBUG")
 log_file_path = os.getenv("LOG_FILE")
@@ -62,6 +56,10 @@ def get_application() -> FastAPI:
         allow_methods=["*"],
         allow_headers=["*"],
     )
+
+    @application.get("/health")
+    async def health_check():
+        return {"status": "ok", "message": "Service is running"}
 
     @application.on_event("startup")
     async def on_startup() -> None:

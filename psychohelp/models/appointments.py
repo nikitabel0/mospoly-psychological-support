@@ -1,11 +1,11 @@
-from psychohelp.config.database import Base
-
-from sqlalchemy import Column, String, ForeignKey, Enum, DateTime
-from sqlalchemy.orm import relationship
-from sqlalchemy.dialects.postgresql import UUID
-
 import enum
 import uuid
+
+from sqlalchemy import Column, DateTime, Enum, ForeignKey, String
+from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.orm import relationship
+
+from psychohelp.config.database import Base
 
 
 class AppointmentType(enum.Enum):
@@ -33,9 +33,13 @@ class Appointment(Base):
     type = Column(Enum(AppointmentType), nullable=False)
     reason = Column(String(64), nullable=True)
     status = Column(Enum(AppointmentStatus), nullable=False)
-    scheduled_time = Column(DateTime(timezone=True), nullable=False, comment="Время назначенной встречи")
+    scheduled_time = Column(
+        DateTime(timezone=True), nullable=False, comment="Время назначенной встречи"
+    )
     remind_time = Column(DateTime(timezone=True), nullable=True, comment="Время напоминания")
-    last_change_time = Column(DateTime(timezone=True), nullable=False, comment="Время последнего изменения")
+    last_change_time = Column(
+        DateTime(timezone=True), nullable=False, comment="Время последнего изменения"
+    )
     venue = Column(String(128), nullable=False, comment="Место проведения встречи")
     comment = Column(String(512), nullable=True, comment="Комментарий к записи")
 

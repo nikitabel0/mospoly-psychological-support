@@ -1,10 +1,10 @@
-from psychohelp.config.database import Base
-
-from sqlalchemy import Column, String, ForeignKey
-from sqlalchemy.orm import relationship
-from sqlalchemy.dialects.postgresql import UUID
-
 import uuid
+
+from sqlalchemy import Column, ForeignKey, String
+from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.orm import relationship
+
+from psychohelp.config.database import Base
 
 
 class Psychologist(Base):
@@ -29,4 +29,3 @@ class Psychologist(Base):
 
     user = relationship("User", back_populates="psychologist_info")
     appointments = relationship("Appointment", back_populates="psychologist")
-

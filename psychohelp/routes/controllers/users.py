@@ -1,23 +1,25 @@
-from fastapi import HTTPException, APIRouter, Request, Response
+import re
+from uuid import UUID
 
+from fastapi import APIRouter, HTTPException, Request, Response
 from starlette.status import (
     HTTP_200_OK,
     HTTP_201_CREATED,
     HTTP_401_UNAUTHORIZED,
+    HTTP_403_FORBIDDEN,
     HTTP_404_NOT_FOUND,
-    HTTP_422_UNPROCESSABLE_ENTITY, HTTP_403_FORBIDDEN,
+    HTTP_422_UNPROCESSABLE_ENTITY,
 )
-from pydantic import EmailStr
 
 from psychohelp.config.logging import get_logger
-from psychohelp.services.users import users
-from psychohelp.services.users import exceptions as users_exceptions
-
 from psychohelp.schemas.users import (
     LoginRequest,
     UserCreateRequest,
     UserResponse,
 )
+from psychohelp.services.users import exceptions as users_exceptions
+from psychohelp.services.users import users
+
 from . import set_token_in_cookie
 
 logger = get_logger(__name__)
@@ -28,26 +30,33 @@ router = APIRouter(prefix="/users", tags=["users"])
 async def user_token(request: Request) -> UserResponse:
     token = request.cookies.get("access_token")
     if not token:
-        raise HTTPException(
-            status_code=HTTP_401_UNAUTHORIZED, detail="Пользователь не авторизован"
-        )
-    
+        raise HTTPException(status_code=HTTP_401_UNAUTHORIZED, detail="Пользователь не авторизован")
+
     user = await users.get_user_by_token(token)
     if user is None:
-        raise HTTPException(
-            status_code=HTTP_404_NOT_FOUND, detail="Пользователь не найден"
-        )
+        raise HTTPException(status_code=HTTP_404_NOT_FOUND, detail="Пользователь не найден")
 
     return user
 
 
-@router.get("/user/{id}", response_model=UserResponse)
-async def user(id: users.UUID) -> UserResponse:
-    user = await users.get_user_by_id(id)
+@router.get("/user/{identifier}", response_model=UserResponse)
+async def user(identifier: str) -> UserResponse:
+    # Проверяем, является ли identifier валидным UUID
+    try:
+        user_id = UUID(identifier)
+        user = await users.get_user_by_id(user_id)
+    except ValueError:
+        # Если не UUID, проверяем, является ли это валидным email
+        email_pattern = r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$"
+        if not re.match(email_pattern, identifier):
+            raise HTTPException(
+                status_code=HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="Идентификатор должен быть валидным UUID или email",
+            ) from None
+        user = await users.get_user_by_email(identifier)
+
     if user is None:
-        raise HTTPException(
-            status_code=HTTP_404_NOT_FOUND, detail="Пользователь не найден"
-        )
+        raise HTTPException(status_code=HTTP_404_NOT_FOUND, detail="Пользователь не найден")
 
     return user
 
@@ -60,7 +69,7 @@ async def register_users(user_data: UserCreateRequest, response: Response) -> Us
         response.status_code = HTTP_201_CREATED
     except ValueError as exc:
         # todo: нельзя так исключение наружу отдавать
-        raise HTTPException(status_code=HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc))
+        raise HTTPException(status_code=HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc)) from exc
 
     return user
 
@@ -75,19 +84,15 @@ async def login(data: LoginRequest, response: Response) -> UserResponse:
         set_token_in_cookie(response, token)
         response.status_code = HTTP_200_OK
         return user
-    except (users_exceptions.UserNotFound, users_exceptions.WrongPassword):
-        raise HTTPException(
-            status_code=HTTP_403_FORBIDDEN, detail="Неверные данные"
-        )
+    except (users_exceptions.UserNotFound, users_exceptions.WrongPassword) as e:
+        raise HTTPException(status_code=HTTP_403_FORBIDDEN, detail="Неверные данные") from e
 
 
 @router.post("/logout")
 async def logout(request: Request, response: Response) -> Response:
     token = request.cookies.get("access_token")
     if token is None:
-        raise HTTPException(
-            status_code=HTTP_401_UNAUTHORIZED, detail="Пользователь не авторизован"
-        )
+        raise HTTPException(status_code=HTTP_401_UNAUTHORIZED, detail="Пользователь не авторизован")
 
     response.status_code = HTTP_200_OK
     response.delete_cookie("access_token")
