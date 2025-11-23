@@ -8,6 +8,7 @@ from starlette.status import (
     HTTP_422_UNPROCESSABLE_ENTITY,
     HTTP_500_INTERNAL_SERVER_ERROR,
 )
+from psychohelp.services.users import get_user_by_token
 
 from uuid import UUID
 
@@ -107,12 +108,27 @@ async def create_appointment(request: Request, appointment: AppointmentCreateReq
 @router.get("/{id}", response_model=AppointmentBase)
 @require_permission(PermissionCode.APPOINTMENTS_VIEW_OWN)
 async def get_appointment(request: Request, id: UUID) -> AppointmentBase:
-    """Получить информацию о конкретной записи"""
-    appointment = await get_appointment_by_id(id)
+    """Получить информацию о конкретной записи""" 
+    token = request.cookies.get("access_token")
+    if not token:
+        raise HTTPException(
+            status_code=HTTP_401_UNAUTHORIZED, 
+            detail="Пользователь не авторизован"
+        )
+    
+    current_user = await get_user_by_token(token)
+    if current_user is None:
+        raise HTTPException(
+            status_code=HTTP_401_UNAUTHORIZED, 
+            detail="Пользователь не авторизован"
+        )
+
+    appointment = await get_appointment_by_id(id, current_user.id)
     if appointment is None:
-        logger.warning(f"Appointment not found: {id}")
+        logger.warning(f"Appointment not found: {id} for user: {current_user.id}")
         raise HTTPException(status_code=HTTP_404_NOT_FOUND, detail="Встреча не найдена")
-    logger.info(f"Appointment retrieved: {id}")
+    
+    logger.info(f"Appointment retrieved: {id} by user: {current_user.id}")
     return appointment
 
 
@@ -120,9 +136,23 @@ async def get_appointment(request: Request, id: UUID) -> AppointmentBase:
 @require_permission(PermissionCode.APPOINTMENTS_CANCEL_OWN)
 async def cancel_appointment(request: Request, id: UUID) -> Response:
     """Отменить запись на прием"""
+    token = request.cookies.get("access_token")
+    if not token:
+        raise HTTPException(
+            status_code=HTTP_401_UNAUTHORIZED, 
+            detail="Пользователь не авторизован"
+        )
+    
+    current_user = await get_user_by_token(token)
+    if current_user is None:
+        raise HTTPException(
+            status_code=HTTP_401_UNAUTHORIZED, 
+            detail="Пользователь не авторизован"
+        )
+
     try:
-        await cancel_appointment_by_id(id)
-        logger.info(f"Appointment cancelled: {id}")
+        await cancel_appointment_by_id(id, current_user.id)
+        logger.info(f"Appointment cancelled: {id} by user: {current_user.id}")
         return Response(None, status_code=HTTP_200_OK)
     except ValueError as e:
         logger.error(f"Appointment cancellation failed: {str(e)}")

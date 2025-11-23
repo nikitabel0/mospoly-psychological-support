@@ -12,10 +12,14 @@ from uuid import UUID
 from datetime import datetime
 
 
-async def get_appointment_by_id(appointment_id: UUID) -> Appointment | None:
+async def get_appointment_by_id(appointment_id: UUID, current_user_id: UUID) -> Appointment | None:
     async with get_async_db() as session:
         result = await session.execute(
-            select(Appointment).filter(Appointment.id == appointment_id)
+            select(Appointment).filter(
+                Appointment.id == appointment_id,
+                (Appointment.patient_id == current_user_id) | 
+                (Appointment.psychologist_id == current_user_id)
+            )
         )
     return result.scalar_one_or_none()
 
@@ -56,7 +60,7 @@ async def create_appointment(
         return new_appointment
 
 
-async def cancel_appointment_by_id(appointment_id: UUID) -> Appointment:
+async def cancel_appointment_by_id(appointment_id: UUID, current_user_id: UUID) -> Appointment:
     async with get_async_db() as session:
         appointment = await session.execute(
             select(Appointment).filter(Appointment.id == appointment_id)
@@ -65,6 +69,10 @@ async def cancel_appointment_by_id(appointment_id: UUID) -> Appointment:
 
         if appointment is None:
             raise ValueError("Встреча не найдена")
+
+        
+        if appointment.patient_id != current_user_id and appointment.psychologist_id != current_user_id:
+            raise ValueError("Недостаточно прав для отмены этой записи")
 
         if appointment.status == AppointmentStatus.Cancelled:
             raise ValueError("Встреча уже отменена")
