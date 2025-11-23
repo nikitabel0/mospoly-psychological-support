@@ -11,8 +11,10 @@ def set_token_in_cookie(response: Response, token: str):
         value=token,
         expires=datetime.now(timezone.utc) + timedelta(minutes=ACCESS_TOKEN_EXPIRE),
         httponly=True,
-        secure=True,
-        samesite="None",
+        # fixme: поставил False в целях тестирования, потом нужно вернуть
+        secure=False,
+        # fixme: 
+        # samesite="None",
     )
 
 def set_refresh_token_in_cookie(response: Response, refresh_token: str):
