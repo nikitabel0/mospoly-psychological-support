@@ -95,11 +95,12 @@ def require_permission(permission_code: PermissionCode):
             # Получаем user_id из токена
             try:
                 user_id = get_user_id_from_token(token)
-            except Exception:
+            except Exception as e:
+                # Любая ошибка при декодировании токена = невалидный токен
                 raise HTTPException(
                     status_code=HTTP_401_UNAUTHORIZED,
                     detail="Невалидный токен"
-                )
+                ) from None
             
             # Проверяем право
             has_permission = await user_has_permission(user_id, permission_code)

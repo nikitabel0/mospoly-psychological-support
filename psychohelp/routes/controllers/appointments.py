@@ -21,8 +21,9 @@ from psychohelp.services.appointments.appointments import (
 )
 from psychohelp.services.appointments import exceptions as exc
 from psychohelp.schemas.appointments import AppointmentBase, AppointmentCreateRequest
-from psychohelp.services.rbac.permissions import require_permission
+from psychohelp.services.rbac.permissions import require_permission, user_has_permission
 from psychohelp.constants.rbac import PermissionCode
+from psychohelp.repositories import get_user_id_from_token
 
 logger = get_logger(__name__)
 router = APIRouter(prefix="/appointments", tags=["appointments"])
@@ -31,16 +32,39 @@ router = APIRouter(prefix="/appointments", tags=["appointments"])
 @router.get("/", response_model=list[AppointmentBase])
 async def get_appointments(request: Request, user_id: UUID | None = None) -> list[AppointmentBase]:
     """Получить список записей на прием"""
+    # Всегда требуем авторизацию
+    if "access_token" not in request.cookies:
+        logger.warning("Unauthorized appointments access attempt")
+        raise HTTPException(
+            HTTP_401_UNAUTHORIZED, detail="Пользователь не авторизован"
+        )
+    
+    token = request.cookies["access_token"]
+    
+    try:
+        current_user_id = get_user_id_from_token(token)
+    except Exception:
+        raise HTTPException(
+            status_code=HTTP_401_UNAUTHORIZED,
+            detail="Невалидный токен"
+        )
+    
     if user_id is None:
-        if "access_token" not in request.cookies:
-            logger.warning("Unauthorized appointments access attempt")
-            raise HTTPException(
-                HTTP_401_UNAUTHORIZED, detail="Пользователь не авторизован"
-            )
-        token = request.cookies["access_token"]
+        # Получаем свои записи
         logger.info("Fetching appointments by token")
         return await get_appointments_by_token(token)
-
+    
+    # Если запрашиваются записи другого пользователя
+    if user_id != current_user_id:
+        # Проверяем права на просмотр всех записей
+        has_permission = await user_has_permission(current_user_id, PermissionCode.APPOINTMENTS_VIEW_ALL)
+        if not has_permission:
+            logger.warning(f"User {current_user_id} attempted to view appointments of user {user_id}")
+            raise HTTPException(
+                HTTP_401_UNAUTHORIZED, 
+                detail="Недостаточно прав для просмотра записей другого пользователя"
+            )
+    
     logger.info(f"Fetching appointments for user: {user_id}")
     return await get_appointments_by_user_id(user_id)
 

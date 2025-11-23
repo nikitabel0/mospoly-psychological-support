@@ -24,7 +24,8 @@ router = APIRouter(prefix="/therapists", tags=["therapists"])
 
 
 @router.get("/{psychologist_id}", response_model=PsychologistResponse)
-async def get_psychologist(psychologist_id: UUID) -> PsychologistResponse:
+@require_permission(PermissionCode.PSYCHOLOGISTS_VIEW)
+async def get_psychologist(request: Request, psychologist_id: UUID) -> PsychologistResponse:
     """Получить информацию о конкретном психологе по ID"""
     psychologist = await get_psychologist_by_id(psychologist_id)
     if psychologist is None:
@@ -36,7 +37,9 @@ async def get_psychologist(psychologist_id: UUID) -> PsychologistResponse:
 
 
 @router.get("/", response_model=list[PsychologistResponse])
+@require_permission(PermissionCode.PSYCHOLOGISTS_VIEW)
 async def get_psychologists(
+    request: Request,
     skip: int = Query(0, ge=0, description="Количество записей для пропуска"),
     take: int = Query(10, gt=0, le=100, description="Количество записей для получения")
 ) -> list[PsychologistResponse]:
