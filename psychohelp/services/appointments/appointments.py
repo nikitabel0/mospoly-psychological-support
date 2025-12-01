@@ -107,3 +107,17 @@ async def get_appointments_by_token(token: str) -> list[Appointment]:
     id = get_user_id_from_token(token)
     return await get_appointments_by_user_id(id)
 
+async def cancel_appointment_by_patient(appointment_id: UUID, patient_id: UUID) -> Appointment:
+    """Отмена записи пациентом"""
+    from psychohelp.repositories.appointments import cancel_appointment_by_patient as repo_cancel
+    
+    appointment = await repo_cancel(appointment_id, patient_id)
+    return appointment
+
+
+async def get_appointment_for_user(appointment_id: UUID, user_id: UUID) -> Appointment | None:
+    """Получить запись для пользователя (проверка прав доступа)"""
+    from psychohelp.repositories.appointments import get_appointment_for_user as repo_get
+    
+    appointment = await repo_get(appointment_id, user_id)
+    return appointment
