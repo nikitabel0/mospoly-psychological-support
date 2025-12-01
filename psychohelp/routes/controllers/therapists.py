@@ -76,8 +76,8 @@ async def delete_psychologist_endpoint(request: Request, psychologist_id: UUID) 
     deleted = await delete_psychologist(psychologist_id)
     if not deleted:
         logger.warning(f"Psychologist not found for deletion: {psychologist_id}")
-        raise HTTPException(status_code=HTTP_404_NOT_FOUND, detail="Psychologist not found")
-    
+        raise HTTPException(status_code=HTTP_404_NOT_FOUND, detail="Психолог не найден")
+
     logger.info(f"Psychologist deleted: {psychologist_id}")
-    return {"message": "Psychologist successfully deleted"}
+    return {"message": "Психолог успешно удалён"}
 
