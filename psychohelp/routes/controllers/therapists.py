@@ -14,6 +14,7 @@ from psychohelp.repositories.psychologists.exceptions import (
     UserNotFoundForPsychologistException,
     PsychologistRoleNotFoundException,
     PsychologistAlreadyExistsException,
+    PsychologistHasActiveAppointmentsException,
 )
 from psychohelp.schemas.psychologists import PsychologistResponse, PsychologistCreateRequest
 from psychohelp.services.rbac.permissions import require_permission
@@ -73,11 +74,19 @@ async def create_psychologist_endpoint(request: Request, data: PsychologistCreat
 @router.delete("/{psychologist_id}")
 @require_permission(PermissionCode.PSYCHOLOGISTS_MANAGE)
 async def delete_psychologist_endpoint(request: Request, psychologist_id: UUID) -> dict[str, str]:
-    deleted = await delete_psychologist(psychologist_id)
-    if not deleted:
-        logger.warning(f"Psychologist not found for deletion: {psychologist_id}")
-        raise HTTPException(status_code=HTTP_404_NOT_FOUND, detail="Психолог не найден")
+    try:
+        deleted = await delete_psychologist(psychologist_id)
+        if not deleted:
+            logger.warning(f"Psychologist not found for deletion: {psychologist_id}")
+            raise HTTPException(status_code=HTTP_404_NOT_FOUND, detail="Психолог не найден")
 
-    logger.info(f"Psychologist deleted: {psychologist_id}")
-    return {"message": "Психолог успешно удалён"}
+        logger.info(f"Psychologist deleted: {psychologist_id}")
+        return {"message": "Психолог успешно удалён"}
+    
+    except PsychologistHasActiveAppointmentsException as e:
+        logger.warning(f"Cannot delete psychologist {psychologist_id}: has active appointments")
+        raise HTTPException(
+            status_code=HTTP_400_BAD_REQUEST,
+            detail="Нельзя удалить психолога: у него есть активные записи."
+        )
 

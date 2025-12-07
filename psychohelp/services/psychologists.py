@@ -1,7 +1,4 @@
 from uuid import UUID
-from sqlalchemy.exc import IntegrityError
-from fastapi import HTTPException
-from starlette.status import HTTP_403_FORBIDDEN
 
 from psychohelp.models.psychologists import Psychologist
 from psychohelp.repositories.psychologists.psychologists import (
@@ -45,13 +42,16 @@ async def create_psychologist(user_id: UUID, psychologist_data: dict) -> Psychol
 
 
 async def delete_psychologist(psychologist_id: UUID) -> bool:
-    try:
-        return await repo_delete_psychologist(psychologist_id)
-
-    except IntegrityError as e:
-        if "foreign key" in str(e).lower():
-            raise HTTPException(
-                status_code=HTTP_403_FORBIDDEN,
-                detail="Нельзя удалить психолога: у него есть активные записи."
-            )
-        raise
+    """
+    Удалить психолога
+    
+    Args:
+        psychologist_id: UUID психолога
+        
+    Returns:
+        bool: True если удалено, False если не найдено
+        
+    Raises:
+        PsychologistHasActiveAppointmentsException: Если у психолога есть активные записи
+    """
+    return await repo_delete_psychologist(psychologist_id)
