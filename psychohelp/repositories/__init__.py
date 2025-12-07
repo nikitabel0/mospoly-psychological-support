@@ -1,5 +1,4 @@
-from psychohelp.config import *
-
+from psychohelp.config.database import config
 from passlib.context import CryptContext
 from datetime import datetime, timedelta, timezone
 
@@ -12,12 +11,12 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
 def create_access_token(sub: str) -> str:
-    expire = datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE)
+    expire = datetime.utcnow() + timedelta(minutes=config.ACCESS_TOKEN_EXPIRE_MINUTES)
     now = datetime.now(timezone.utc)
     encoded = jwt.encode(
         {"sub": str(sub), "exp": expire, "iat": now},
-        SECRET_KEY,
-        algorithm=ALGORITHM,
+        config.SECRET_KEY,
+        algorithm=config.ALGORITHM,
     )
     return encoded
 
@@ -44,8 +43,8 @@ def refresh_access_token(refresh_token: str) -> str:
 def get_user_id_from_token(token: str) -> UUID:
     decoded = jwt.decode(
         token,
-        SECRET_KEY,
-        algorithms=[ALGORITHM],
+        config.SECRET_KEY,
+        algorithms=[config.ALGORITHM],
         options={"verify_iat": True, "verify_exp": True, "verify_signature": True},
     )
 
