@@ -2,7 +2,7 @@ import os
 import time
 import pytest
 import jwt
-from datetime import datetime
+from datetime import datetime, timezone
 from unittest.mock import patch
 from uuid import uuid4
 from jwt.exceptions import ExpiredSignatureError
@@ -92,5 +92,5 @@ class TestTokenExpiration:
         assert decoded["sub"] == user_id
 
         exp_timestamp = decoded["exp"]
-        current_timestamp = datetime.utcnow().timestamp()
+        current_timestamp = datetime.now(timezone.utc).timestamp()
         assert exp_timestamp > current_timestamp

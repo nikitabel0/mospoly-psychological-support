@@ -9,7 +9,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.future import select
 
 from uuid import UUID
-from datetime import datetime
+from datetime import datetime, timezone
 
 
 async def get_appointment_by_id(appointment_id: UUID) -> Appointment | None:
@@ -70,7 +70,7 @@ async def cancel_appointment_by_id(appointment_id: UUID) -> Appointment:
             raise ValueError("Встреча уже отменена")
 
         appointment.status = AppointmentStatus.Cancelled
-        appointment.last_change_time = datetime.now()
+        appointment.last_change_time = datetime.now(timezone.utc)
 
         try:
             await session.commit()
