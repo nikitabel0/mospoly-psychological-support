@@ -2,7 +2,6 @@ import os
 from pathlib import Path
 
 from fastapi import FastAPI
-from fastapi.responses import Response
 from fastapi.middleware.cors import CORSMiddleware
 
 from sqlalchemy.ext.asyncio import create_async_engine
@@ -79,7 +78,7 @@ def get_application() -> FastAPI:
 app = get_application()
 
 
-def main() -> None:
+def main():
     uvicorn.run(
         "psychohelp.main:app",
         host=config.APP_HOST,

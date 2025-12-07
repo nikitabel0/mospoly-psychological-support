@@ -23,6 +23,7 @@ class Config:
     SECRET_KEY = os.getenv("SECRET_KEY", "secret-key")
     ALGORITHM = os.getenv("JWT_ALGORITHM", "HS256")
     ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "30"))
+    REFRESH_TOKEN_EXPIRE = int(os.getenv("REFRESH_TOKEN_EXPIRE", "30"))
 
     APP_PORT = int(os.getenv("APP_PORT", "8000"))
     APP_HOST = os.getenv("APP_HOST", "127.0.0.1")
