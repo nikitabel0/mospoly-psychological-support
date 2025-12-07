@@ -22,9 +22,17 @@ class PermissionCode(str, Enum):
     
     # Users permissions
     USERS_EDIT_OWN_PROFILE = "users.edit_own_profile"
+    USERS_VIEW_ANY = "users.view_any"
+    USERS_MANAGE = "users.manage"
+    
+    # Roles permissions
+    ROLES_ASSIGN = "roles.assign"
+    ROLES_REMOVE = "roles.remove"
+    ROLES_VIEW_ALL = "roles.view_all"
     
     # Psychologists permissions
     PSYCHOLOGISTS_EDIT_OWN_PROFILE = "psychologists.edit_own_profile"
+    PSYCHOLOGISTS_VIEW = "psychologists.view"
     PSYCHOLOGISTS_MANAGE = "psychologists.manage"
     
     # Statistics permissions
