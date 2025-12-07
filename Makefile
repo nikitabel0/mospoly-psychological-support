@@ -28,7 +28,7 @@ migrate-history:
 	docker compose exec app bash -c "POSTGRES_HOST=db uv run alembic history"
 
 test:
-	pytest tests/ -v     
+	uv run pytest tests/ -v     
 
 
-.PHONY: up down migrate migrate-create migrate-rollback migrate-status migrate-history
+.PHONY: up down migrate migrate-create migrate-rollback migrate-status migrate-history test
