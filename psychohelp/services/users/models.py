@@ -5,5 +5,6 @@ from psychohelp.models.users import User
 
 @dataclass(frozen=True, slots=True)
 class UserWithToken:
-    user: User
+    user: models.User
     token: str
+    refresh_token: str
