@@ -12,12 +12,12 @@ from starlette.status import (
 from uuid import UUID
 
 from psychohelp.config.logging import get_logger
+from psychohelp.repositories import get_user_id_from_token
 from psychohelp.services.appointments.appointments import (
     get_appointment_by_id,
     create_appointment as srv_create_appointment,
     cancel_appointment_by_id,
     get_appointments_by_token,
-    get_appointments_by_user_id,
 )
 from psychohelp.services.appointments import exceptions as exc
 from psychohelp.schemas.appointments import AppointmentBase, AppointmentCreateRequest
@@ -29,26 +29,35 @@ router = APIRouter(prefix="/appointments", tags=["appointments"])
 
 
 @router.get("/", response_model=list[AppointmentBase])
-async def get_appointments(request: Request, user_id: UUID | None = None) -> list[AppointmentBase]:
-    """Получить список записей на прием"""
-    if user_id is None:
-        if "access_token" not in request.cookies:
-            logger.warning("Unauthorized appointments access attempt")
-            raise HTTPException(
-                HTTP_401_UNAUTHORIZED, detail="Пользователь не авторизован"
-            )
-        token = request.cookies["access_token"]
-        logger.info("Fetching appointments by token")
-        return await get_appointments_by_token(token)
-
-    logger.info(f"Fetching appointments for user: {user_id}")
-    return await get_appointments_by_user_id(user_id)
+async def get_appointments(request: Request) -> list[AppointmentBase]:
+    """Получить список записей на прием текущего пользователя"""
+    if "access_token" not in request.cookies:
+        logger.warning("Unauthorized appointments access attempt")
+        raise HTTPException(
+            HTTP_401_UNAUTHORIZED, detail="Пользователь не авторизован"
+        )
+    token = request.cookies["access_token"]
+    logger.info("Fetching appointments by token")
+    return await get_appointments_by_token(token)
 
 
 @router.post("/create", response_model=AppointmentBase)
 @require_permission(PermissionCode.APPOINTMENTS_CREATE_OWN)
 async def create_appointment(request: Request, appointment: AppointmentCreateRequest) -> AppointmentBase:
     """Создать новую запись на прием к психологу"""
+    # Проверяем, что пользователь создает запись от своего имени
+    token = request.cookies.get("access_token")
+    if not token:
+        raise HTTPException(status_code=HTTP_401_UNAUTHORIZED, detail="Пользователь не авторизован")
+    
+    current_user_id = get_user_id_from_token(token)
+    if appointment.patient_id != current_user_id:
+        logger.warning(f"User {current_user_id} attempted to create appointment for another user {appointment.patient_id}")
+        raise HTTPException(
+            status_code=HTTP_403_FORBIDDEN,
+            detail="Вы можете создавать записи только от своего имени"
+        )
+    
     try:
         created_appointment = await srv_create_appointment(**appointment.model_dump())
         logger.info(f"Appointment created: {created_appointment.id}")
@@ -112,6 +121,17 @@ async def get_appointment(request: Request, id: UUID) -> AppointmentBase:
     if appointment is None:
         logger.warning(f"Appointment not found: {id}")
         raise HTTPException(status_code=HTTP_404_NOT_FOUND, detail="Встреча не найдена")
+    
+    # Проверяем, что запись принадлежит текущему пользователю
+    token = request.cookies.get("access_token")
+    if not token:
+        raise HTTPException(status_code=HTTP_401_UNAUTHORIZED, detail="Пользователь не авторизован")
+    
+    user_id = get_user_id_from_token(token)
+    if appointment.patient_id != user_id and appointment.psychologist_id != user_id:
+        logger.warning(f"User {user_id} attempted to access appointment {id} that doesn't belong to them")
+        raise HTTPException(status_code=HTTP_403_FORBIDDEN, detail="Доступ запрещен: запись не принадлежит вам")
+    
     logger.info(f"Appointment retrieved: {id}")
     return appointment
 
@@ -120,6 +140,21 @@ async def get_appointment(request: Request, id: UUID) -> AppointmentBase:
 @require_permission(PermissionCode.APPOINTMENTS_CANCEL_OWN)
 async def cancel_appointment(request: Request, id: UUID) -> Response:
     """Отменить запись на прием"""
+    # Проверяем, что запись существует и принадлежит текущему пользователю
+    appointment = await get_appointment_by_id(id)
+    if appointment is None:
+        logger.warning(f"Appointment not found: {id}")
+        raise HTTPException(status_code=HTTP_404_NOT_FOUND, detail="Встреча не найдена")
+    
+    token = request.cookies.get("access_token")
+    if not token:
+        raise HTTPException(status_code=HTTP_401_UNAUTHORIZED, detail="Пользователь не авторизован")
+    
+    user_id = get_user_id_from_token(token)
+    if appointment.patient_id != user_id and appointment.psychologist_id != user_id:
+        logger.warning(f"User {user_id} attempted to cancel appointment {id} that doesn't belong to them")
+        raise HTTPException(status_code=HTTP_403_FORBIDDEN, detail="Доступ запрещен: запись не принадлежит вам")
+    
     try:
         await cancel_appointment_by_id(id)
         logger.info(f"Appointment cancelled: {id}")
