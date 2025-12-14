@@ -109,7 +109,7 @@ async def get_appointments_by_token(token: str) -> list[Appointment]:
 
 async def cancel_appointment_by_patient(appointment_id: UUID, patient_id: UUID) -> Appointment:
     """Отмена записи пациентом"""
-    from psychohelp.repositories.appointments import cancel_appointment_by_patient as repo_cancel
+    from psychohelp.repositories.appointments import cancel_appointment_by_patient_id as repo_cancel
     
     appointment = await repo_cancel(appointment_id, patient_id)
     return appointment
