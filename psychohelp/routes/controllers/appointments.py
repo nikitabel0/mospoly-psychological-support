@@ -19,10 +19,13 @@ from psychohelp.services.appointments.appointments import (
 )
 from psychohelp.services.appointments import exceptions as exc
 from psychohelp.schemas.appointments import AppointmentBase, AppointmentCreateRequest
-from psychohelp.services.rbac.permissions import require_permission
+from psychohelp.services.rbac.permissions import require_permission, user_has_permission
 from psychohelp.constants.rbac import PermissionCode
+
+from psychohelp.repositories import get_user_id_from_token
 from psychohelp.dependencies import get_current_user, get_optional_user
 from psychohelp.models.users import User
+
 
 logger = get_logger(__name__)
 router = APIRouter(prefix="/appointments", tags=["appointments"])
@@ -34,6 +37,23 @@ async def get_appointments(
     current_user: User = Depends(get_optional_user)
 ) -> list[AppointmentBase]:
     """Получить список записей на прием"""
+    # Всегда требуем авторизацию
+    if "access_token" not in request.cookies:
+        logger.warning("Unauthorized appointments access attempt")
+        raise HTTPException(
+            HTTP_401_UNAUTHORIZED, detail="Пользователь не авторизован"
+        )
+    
+    token = request.cookies["access_token"]
+    
+    try:
+        current_user_id = get_user_id_from_token(token)
+    except Exception:
+        raise HTTPException(
+            status_code=HTTP_401_UNAUTHORIZED,
+            detail="Невалидный токен"
+        )
+    
     if user_id is None:
         if current_user is None:
             logger.warning("Unauthorized appointments access attempt")

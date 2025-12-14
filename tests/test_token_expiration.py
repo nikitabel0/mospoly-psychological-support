@@ -35,6 +35,9 @@ class TestTokenExpiration:
             decoded_user_id = get_user_id_from_token(token)
             assert str(decoded_user_id) == user_id
 
+            # Ждём пока токен истечёт
+            time.sleep(3)
+
             # После этого токен уже должен быть просрочен
             with pytest.raises(ExpiredSignatureError):
                 get_user_id_from_token(token)
