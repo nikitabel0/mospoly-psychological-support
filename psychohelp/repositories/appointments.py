@@ -95,3 +95,45 @@ async def get_appointments_by_user_id(user_id: UUID) -> list[Appointment]:
             )
         )
         return result.scalars().all()
+
+
+async def cancel_appointment_by_patient_id(appointment_id: UUID, patient_id: UUID) -> Appointment:
+    async with get_async_db() as session:
+        appointment = await session.execute(
+            select(Appointment).filter(
+                (Appointment.id == appointment_id)
+                & (Appointment.patient_id == patient_id)
+            )
+        )
+        appointment = appointment.scalar_one_or_none()
+
+        if appointment is None:
+            raise ValueError("Встреча не найдена или пациент не имеет прав на отмену")
+
+        if appointment.status == AppointmentStatus.Cancelled:
+            raise ValueError("Встреча уже отменена")
+
+        appointment.status = AppointmentStatus.Cancelled
+        appointment.last_change_time = datetime.now(timezone.utc)
+
+        try:
+            await session.commit()
+        except IntegrityError:
+            await session.rollback()
+            raise
+
+        return appointment
+    
+async def get_appointment_for_user(appointment_id: UUID, user_id: UUID) -> Appointment | None:
+    """Получить запись для пользователя (проверка прав доступа)"""
+    async with get_async_db() as session:
+        result = await session.execute(
+            select(Appointment).filter(
+                (Appointment.id == appointment_id)
+                & (
+                    (Appointment.patient_id == user_id)
+                    | (Appointment.psychologist_id == user_id)
+                )
+            )
+        )
+    return result.scalar_one_or_none()
