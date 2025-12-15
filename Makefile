@@ -27,4 +27,13 @@ migrate-status:
 migrate-history:
 	docker compose exec app bash -c "POSTGRES_HOST=db uv run alembic history"
 
-.PHONY: up down migrate migrate-create migrate-rollback migrate-status migrate-history
+# Переменные для тестов (можно переопределить в .env)
+TEST_API_HOST ?= localhost
+TEST_API_PORT ?= 8000
+TEST_API_TIMEOUT ?= 30.0
+
+test:
+	docker-compose exec app bash -c "uv sync --extra dev && POSTGRES_HOST=db TEST_API_HOST=$(TEST_API_HOST) TEST_API_PORT=$(TEST_API_PORT) TEST_API_TIMEOUT=$(TEST_API_TIMEOUT) uv run pytest tests/ -v"
+
+
+.PHONY: up down migrate migrate-create migrate-rollback migrate-status migrate-history test test-local

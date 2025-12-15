@@ -9,15 +9,17 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.future import select
 
 from uuid import UUID
-from datetime import datetime
+from datetime import datetime, timezone
 
 
 async def get_appointment_by_id(appointment_id: UUID) -> Appointment | None:
+    """Базовая функция - получить запись по ID без проверок прав"""
     async with get_async_db() as session:
         result = await session.execute(
             select(Appointment).filter(Appointment.id == appointment_id)
         )
     return result.scalar_one_or_none()
+
 
 
 async def create_appointment(
@@ -56,7 +58,7 @@ async def create_appointment(
         return new_appointment
 
 
-async def cancel_appointment_by_id(appointment_id: UUID) -> Appointment:
+async def cancel_appointment_by_patient(appointment_id: UUID, current_user_id: UUID) -> Appointment:
     async with get_async_db() as session:
         appointment = await session.execute(
             select(Appointment).filter(Appointment.id == appointment_id)
@@ -66,11 +68,14 @@ async def cancel_appointment_by_id(appointment_id: UUID) -> Appointment:
         if appointment is None:
             raise ValueError("Встреча не найдена")
 
+        if appointment.patient_id != current_user_id:
+            raise ValueError("Только пациент может отменить свою запись")
+
         if appointment.status == AppointmentStatus.Cancelled:
             raise ValueError("Встреча уже отменена")
 
         appointment.status = AppointmentStatus.Cancelled
-        appointment.last_change_time = datetime.now()
+        appointment.last_change_time = datetime.now(timezone.utc)
 
         try:
             await session.commit()
@@ -90,3 +95,16 @@ async def get_appointments_by_user_id(user_id: UUID) -> list[Appointment]:
             )
         )
         return result.scalars().all()
+
+
+async def get_appointment_for_user(appointment_id: UUID, user_id: UUID) -> Appointment | None:
+    """Получить запись по ID, только если пользователь — участник встречи"""
+    async with get_async_db() as session:
+        result = await session.execute(
+            select(Appointment).filter(
+                Appointment.id == appointment_id,
+                (Appointment.patient_id == user_id)
+                | (Appointment.psychologist_id == user_id)
+            )
+        )
+        return result.scalar_one_or_none()

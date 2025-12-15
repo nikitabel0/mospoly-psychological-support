@@ -2,7 +2,6 @@ import os
 from pathlib import Path
 
 from fastapi import FastAPI
-from fastapi.responses import Response
 from fastapi.middleware.cors import CORSMiddleware
 
 from sqlalchemy.ext.asyncio import create_async_engine
@@ -10,8 +9,6 @@ from sqlalchemy.ext.asyncio import AsyncEngine
 
 from psychohelp.config.database import (
     Base,
-    RESET_DB_ON_START,
-    RESET_COOKIE_ON_START,
     config,
 )
 from psychohelp.config.logging import setup_logging, get_logger
@@ -67,7 +64,7 @@ def get_application() -> FastAPI:
     async def on_startup() -> None:
         logger.info("Starting application")
 
-        if RESET_DB_ON_START:
+        if config.RESET_DB_ON_START:
             await reset_database(engine)
         logger.info("Application started successfully")
 
@@ -81,10 +78,11 @@ def get_application() -> FastAPI:
 app = get_application()
 
 
-def main() -> None:
+def main():
     uvicorn.run(
         "psychohelp.main:app",
-        host="0.0.0.0",
+        host=config.APP_HOST,
+        port=config.APP_PORT,
         reload=True,
         log_config=None,
         log_level=log_level.lower(),

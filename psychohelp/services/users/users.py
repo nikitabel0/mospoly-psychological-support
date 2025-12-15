@@ -1,4 +1,4 @@
-from psychohelp.repositories import create_access_token, verify_password, hash_password
+from psychohelp.repositories import create_access_token, create_refresh_token, verify_password, hash_password, refresh_access_token
 from psychohelp.repositories.users import (
     get_user_by_id as repo_get_user_by_id,
     get_user_by_email as repo_get_user_by_email,
@@ -40,7 +40,7 @@ async def register_user(
         middle_name,
         social_media,
     )
-    return new_user, create_access_token(new_user.id)
+    return new_user, create_access_token(new_user.id), create_refresh_token(new_user.id)
 
 
 async def login_user(email: str, password: str) -> models.UserWithToken:
@@ -54,4 +54,5 @@ async def login_user(email: str, password: str) -> models.UserWithToken:
     return models.UserWithToken(
         user=user,
         token=create_access_token(user.id),
+        refresh_token=create_refresh_token(user.id),
     )
