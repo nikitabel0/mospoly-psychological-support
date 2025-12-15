@@ -54,6 +54,8 @@ def get_application() -> FastAPI:
             "http://localhost",
             "http://185.128.105.126:8000",
             "http://185.128.105.126:3000",
+            "http://194.87.147.243",
+            "https://194.87.147.243",
         ],
         allow_credentials=True,
         allow_methods=["*"],
