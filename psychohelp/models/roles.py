@@ -1,4 +1,4 @@
-from psychohelp.config.database import Base
+from psychohelp.config.config import Base
 from psychohelp.constants.rbac import RoleCode
 
 from sqlalchemy import Column, String, Table, ForeignKey, DateTime, Enum as SQLEnum

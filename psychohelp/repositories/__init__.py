@@ -1,4 +1,4 @@
-from psychohelp.config.database import config
+from psychohelp.config.config import config
 from passlib.context import CryptContext
 from datetime import datetime, timedelta, timezone
 
@@ -22,7 +22,7 @@ def create_access_token(sub: str) -> str:
 
 def create_refresh_token(sub: str) -> str:
     now = datetime.now(timezone.utc)
-    expire = now + timedelta(minutes=REFRESH_TOKEN_EXPIRE)
+    expire = now + timedelta(minutes=config.REFRESH_TOKEN_EXPIRE)
     encoded = jwt.encode(
         {"sub": str(sub), "exp": expire, "iat": now},
         config.SECRET_KEY,

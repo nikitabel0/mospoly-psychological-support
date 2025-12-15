@@ -7,7 +7,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.ext.asyncio import create_async_engine
 from sqlalchemy.ext.asyncio import AsyncEngine
 
-from psychohelp.config.database import (
+from psychohelp.config.config import (
     Base,
     config,
 )

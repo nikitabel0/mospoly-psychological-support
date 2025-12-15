@@ -3,7 +3,7 @@ from uuid import UUID
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
 
-from psychohelp.config.database import get_async_db
+from psychohelp.config.config import get_async_db
 from psychohelp.models.users import User
 from psychohelp.models.roles import Role
 from psychohelp.repositories.rbac.exceptions import (
