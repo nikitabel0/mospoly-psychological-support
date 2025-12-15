@@ -40,7 +40,7 @@ coverage.xml
 
 # Конфигурационные файлы Flask
 instance/
-config.py
+
 .env
 
 # Библиотеки

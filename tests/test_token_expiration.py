@@ -7,7 +7,7 @@ from unittest.mock import patch
 from uuid import uuid4
 from jwt.exceptions import ExpiredSignatureError
 from psychohelp.repositories import create_access_token, get_user_id_from_token
-from psychohelp.config.database import config, Config
+from psychohelp.config.config import config, Config
 
 class TestTokenExpiration:
     """Тесты для проверки истечения токенов"""

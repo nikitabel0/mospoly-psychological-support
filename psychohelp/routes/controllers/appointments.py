@@ -21,7 +21,7 @@ from psychohelp.services.appointments import exceptions as exc
 from psychohelp.schemas.appointments import AppointmentBase, AppointmentCreateRequest
 from psychohelp.services.rbac.permissions import require_permission
 from psychohelp.constants.rbac import PermissionCode
-from psychohelp.dependencies import get_current_user, get_optional_user
+from psychohelp.dependencies.auth import get_current_user, get_optional_user
 from psychohelp.models.users import User
 
 logger = get_logger(__name__)

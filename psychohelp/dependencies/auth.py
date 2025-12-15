@@ -1,6 +1,6 @@
 from fastapi import Request, HTTPException, Depends
 from starlette.status import HTTP_401_UNAUTHORIZED
-from psychohelp.services.users import get_user_by_token
+from psychohelp.services.users.users import get_user_by_token
 from psychohelp.models.users import User
 
 

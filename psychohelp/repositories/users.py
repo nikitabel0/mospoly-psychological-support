@@ -1,7 +1,7 @@
 from psychohelp.constants.rbac import RoleCode
 from psychohelp.models.users import User
 from psychohelp.models.roles import Role
-from psychohelp.config.database import get_async_db
+from psychohelp.config.config import get_async_db
 from psychohelp.repositories import get_user_id_from_token, UUID
 
 from sqlalchemy import select

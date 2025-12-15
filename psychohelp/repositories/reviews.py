@@ -1,5 +1,5 @@
 from psychohelp.models.reviews import Review
-from psychohelp.config.database import get_async_db
+from psychohelp.config.config import get_async_db
 
 from sqlalchemy import select
 

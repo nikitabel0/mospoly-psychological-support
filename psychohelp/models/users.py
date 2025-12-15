@@ -1,4 +1,4 @@
-from psychohelp.config.database import Base
+from psychohelp.config.config import Base
 
 from sqlalchemy import Column, String
 from sqlalchemy.orm import relationship

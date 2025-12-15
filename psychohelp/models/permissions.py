@@ -1,4 +1,4 @@
-from psychohelp.config.database import Base
+from psychohelp.config.config import Base
 from psychohelp.constants.rbac import PermissionCode
 
 from sqlalchemy import Column, String, Enum as SQLEnum
