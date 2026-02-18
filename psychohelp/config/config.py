@@ -26,7 +26,7 @@ class Config:
     REFRESH_TOKEN_EXPIRE = int(os.getenv("REFRESH_TOKEN_EXPIRE", "30"))
 
     APP_PORT = int(os.getenv("APP_PORT", "8000"))
-    APP_HOST = os.getenv("APP_HOST", "127.0.0.1")
+    APP_HOST = os.getenv("APP_HOST", "0.0.0.0")
     RESET_DB_ON_START = os.getenv("RESET_DB_ON_START", "false").lower() == "true"
     RESET_COOKIE_ON_START = os.getenv("RESET_COOKIE_ON_START", "true").lower() == "true"
     LOG_LEVEL = os.getenv("LOG_LEVEL", "DEBUG")
