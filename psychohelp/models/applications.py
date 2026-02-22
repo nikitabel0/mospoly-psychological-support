@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, Text, Enum as SQLEnum, DateTime, ForeignKey
+from sqlalchemy import Column, String, Text, DateTime, ForeignKey
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 from datetime import datetime, timezone
@@ -38,8 +38,8 @@ class Application(Base):
     phone = Column(String(20), nullable=False)
     problem_description = Column(Text, nullable=False)         
     preferred_campus = Column(String(128), nullable=False)     
-    university_status = Column(SQLEnum(UniversityStatus), nullable=False)
-    status = Column(SQLEnum(ApplicationStatus), default=ApplicationStatus.NEW, nullable=False)
+    university_status = Column(String(50), nullable=False)
+    status = Column(String(50), default=ApplicationStatus.NEW.value, nullable=False)
     created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
     updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
 
