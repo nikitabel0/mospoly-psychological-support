@@ -7,6 +7,7 @@ from psychohelp.repositories import get_user_id_from_token, UUID
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import selectinload
+from sqlalchemy import update 
 
 
 async def get_user_by_id(user_id: UUID) -> User | None:
@@ -77,3 +78,16 @@ async def create_user(
         except IntegrityError:
             await session.rollback()
             raise
+
+async def update_user(user_id: UUID, update_data: dict) -> User | None:
+    """Обновить данные пользователя"""
+    async with get_async_db() as session:
+        stmt = (
+            update(User)
+            .where(User.id == user_id)
+            .values(**update_data)
+            .returning(User)
+        )
+        result = await session.execute(stmt)
+        await session.commit()
+        return result.scalar_one_or_none()

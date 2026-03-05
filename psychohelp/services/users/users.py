@@ -8,6 +8,13 @@ from psychohelp.repositories.users import (
 )
 from psychohelp.models.users import User
 from psychohelp.services.users import exceptions, models
+from psychohelp.schemas.users import UserUpdateRequest
+from psychohelp.repositories.users import update_user, get_user_by_id
+from psychohelp.services.users.exceptions import UserNotFound, PermissionDenied
+from psychohelp.repositories import verify_password, hash_password
+from sqlalchemy.exc import IntegrityError
+from fastapi import HTTPException
+from starlette.status import HTTP_409_CONFLICT
 
 
 async def get_user_by_id(user_id: UUID) -> User | None:
@@ -56,3 +63,61 @@ async def login_user(email: str, password: str) -> models.UserWithToken:
         token=create_access_token(user.id),
         refresh_token=create_refresh_token(user.id),
     )
+
+
+async def update_profile(
+    current_user_id: UUID,
+    target_user_id: UUID,
+    data: UserUpdateRequest,
+    is_admin: bool = False
+) -> User:
+    """
+    Обновление профиля.
+    Если current_user_id != target_user_id, то требуется is_admin=True.
+    """
+    if current_user_id != target_user_id and not is_admin:
+        raise PermissionDenied("Вы можете редактировать только свой профиль")
+
+    user = await get_user_by_id(target_user_id)
+    if not user:
+        raise UserNotFound()
+
+    # Исключаем поля, которые не были переданы (None)
+    update_dict = data.model_dump(exclude_unset=True)
+    if not update_dict:
+        return user  # ничего не меняем
+
+    # Проверка уникальности email (если передан новый email)
+    if "email" in update_dict:
+        existing = await get_user_by_email(update_dict["email"])
+        if existing and existing.id != target_user_id:
+            raise HTTPException(
+                status_code=HTTP_409_CONFLICT,
+                detail="Пользователь с таким email уже существует"
+            )
+
+    try:
+        updated_user = await update_user(target_user_id, update_dict)
+    except IntegrityError as e:
+        # Другие возможные ошибки уникальности (phone_number и т.д.)
+        raise HTTPException(
+            status_code=HTTP_409_CONFLICT,
+            detail="Данные конфликтуют с существующими записями"
+        )
+
+    return updated_user
+
+
+async def change_password(
+    user_id: UUID,
+    old_password: str,
+    new_password: str
+) -> None:
+    user = await get_user_by_id(user_id)
+    if not user:
+        raise UserNotFound()
+
+    if not verify_password(old_password, user.password):
+        raise ValueError("Неверный старый пароль")
+
+    await update_user(user_id, {"password": hash_password(new_password)})
