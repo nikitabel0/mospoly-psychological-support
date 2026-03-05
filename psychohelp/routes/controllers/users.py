@@ -20,6 +20,13 @@ from psychohelp.schemas.users import (
 )
 from . import set_token_in_cookie, set_refresh_token_in_cookie
 
+from starlette.status import HTTP_400_BAD_REQUEST, HTTP_409_CONFLICT
+from uuid import UUID
+from psychohelp.schemas.users import UserUpdateRequest, PasswordChangeRequest
+from psychohelp.services.users.users import update_profile, change_password
+from psychohelp.services.users.exceptions import PermissionDenied, UserNotFound
+from psychohelp.repositories import get_user_id_from_token
+
 logger = get_logger(__name__)
 router = APIRouter(prefix="/users", tags=["users"])
 
@@ -118,3 +125,113 @@ async def refresh_token(request: Request, response: Response) -> UserResponse:
         raise HTTPException(
             status_code=HTTP_401_UNAUTHORIZED, detail="Недействительный токен обновления"
         )
+@router.put("/me", response_model=UserResponse)
+async def update_my_profile(
+    request: Request,
+    data: UserUpdateRequest
+) -> UserResponse:
+    """Обновление своего профиля (требуется авторизация)"""
+    token = request.cookies.get("access_token")
+    if not token:
+        raise HTTPException(
+            status_code=HTTP_401_UNAUTHORIZED,
+            detail="Пользователь не авторизован"
+        )
+
+    user_id = get_user_id_from_token(token)
+    if not user_id:
+        raise HTTPException(
+            status_code=HTTP_401_UNAUTHORIZED,
+            detail="Недействительный токен"
+        )
+
+    try:
+        updated_user = await update_profile(
+            current_user_id=user_id,
+            target_user_id=user_id,
+            data=data,
+            is_admin=False
+        )
+    except UserNotFound:
+        raise HTTPException(
+            status_code=HTTP_404_NOT_FOUND,
+            detail="Пользователь не найден"
+        )
+    except PermissionDenied as e:
+        raise HTTPException(
+            status_code=HTTP_403_FORBIDDEN,
+            detail=str(e)
+        )
+    except HTTPException as e:
+        raise e
+
+    return UserResponse.from_orm(updated_user)
+
+
+@router.put("/{user_id}", response_model=UserResponse)
+async def update_user_by_id(
+    request: Request,
+    user_id: UUID,
+    data: UserUpdateRequest
+) -> UserResponse:
+    """Обновление профиля любого пользователя (только для администраторов)"""
+    token = request.cookies.get("access_token")
+    current_user_id = get_user_id_from_token(token) if token else None
+
+    try:
+        updated_user = await update_profile(
+            current_user_id=current_user_id,
+            target_user_id=user_id,
+            data=data,
+            is_admin=True  # предполагаем, что админ
+        )
+    except UserNotFound:
+        raise HTTPException(
+            status_code=HTTP_404_NOT_FOUND,
+            detail="Пользователь не найден"
+        )
+    except PermissionDenied as e:
+        raise HTTPException(
+            status_code=HTTP_403_FORBIDDEN,
+            detail=str(e)
+        )
+    except HTTPException as e:
+        raise e
+
+    return UserResponse.from_orm(updated_user)
+
+
+@router.post("/me/password", status_code=HTTP_200_OK)
+async def change_my_password(
+    request: Request,
+    data: PasswordChangeRequest
+) -> dict:
+    """Смена пароля текущего пользователя"""
+    token = request.cookies.get("access_token")
+    if not token:
+        raise HTTPException(
+            status_code=HTTP_401_UNAUTHORIZED,
+            detail="Пользователь не авторизован"
+        )
+
+    user_id = get_user_id_from_token(token)
+    if not user_id:
+        raise HTTPException(
+            status_code=HTTP_401_UNAUTHORIZED,
+            detail="Недействительный токен"
+        )
+
+    try:
+        await change_password(user_id, data.old_password, data.new_password)
+    except UserNotFound:
+        raise HTTPException(
+            status_code=HTTP_404_NOT_FOUND,
+            detail="Пользователь не найден"
+        )
+    except ValueError as e:
+        raise HTTPException(
+            status_code=HTTP_400_BAD_REQUEST,
+            detail=str(e)
+        )
+
+    return {"message": "Пароль успешно изменён"}

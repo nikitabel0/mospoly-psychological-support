@@ -6,3 +6,5 @@ class WrongPassword(Exception):
 
 class InvalidToken(Exception):
     pass
+class PermissionDenied(Exception):
+    pass
