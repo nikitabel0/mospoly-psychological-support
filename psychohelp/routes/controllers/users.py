@@ -93,8 +93,8 @@ async def logout(request: Request, response: Response) -> Response:
         )
 
     response.status_code = HTTP_200_OK
-    response.delete_cookie("access_token")
-    response.delete_cookie("refresh_token")
+    response.delete_cookie("access_token", secure=True, samesite="None")
+    response.delete_cookie("refresh_token", secure=True, samesite="None")
     return response
 
 @router.post("/refresh", response_model=UserResponse)
