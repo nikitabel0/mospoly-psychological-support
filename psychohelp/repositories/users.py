@@ -9,17 +9,23 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import selectinload
 from sqlalchemy import update 
 
-
 async def get_user_by_id(user_id: UUID) -> User | None:
     async with get_async_db() as session:
-        result = await session.execute(select(User).filter(User.id == user_id))
-
+        result = await session.execute(
+            select(User)
+            .options(selectinload(User.roles))        
+            .filter(User.id == user_id)
+        )
     return result.scalar_one_or_none()
 
 
 async def get_user_by_email(email: str) -> User | None:
     async with get_async_db() as session:
-        result = await session.execute(select(User).filter(User.email == email))
+        result = await session.execute(
+            select(User)
+            .options(selectinload(User.roles))         
+            .filter(User.email == email)
+        )
     return result.scalar_one_or_none()
 
 
@@ -72,7 +78,7 @@ async def create_user(
                 new_user.roles.append(user_role)
             
             await session.commit()
-            await session.refresh(new_user)
+            await session.refresh(new_user, ['roles']) 
             return new_user
 
         except IntegrityError:
