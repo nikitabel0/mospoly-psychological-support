@@ -1,7 +1,7 @@
 from pydantic import BaseModel, EmailStr, Field
 from pydantic_extra_types.phone_numbers import PhoneNumber
 from typing import Optional
-
+from psychohelp.schemas.roles import RoleResponse 
 from uuid import UUID
 
 
@@ -38,6 +38,7 @@ class UserResponse(BaseModel):
     phone_number: PhoneNumber
     email: EmailStr
     social_media: str | None = Field(None, max_length=50)
+    roles: list[RoleResponse] = []
 
     class Config:
         from_attributes = True

@@ -87,8 +87,8 @@ async def login(data: LoginRequest, response: Response) -> UserResponse:
         return user
     except (users_exceptions.UserNotFound, users_exceptions.WrongPassword):
         raise HTTPException(
-            status_code=HTTP_403_FORBIDDEN, detail="Неверные данные"
-        )
+            status_code=HTTP_401_UNAUTHORIZED, detail="Неверные данные"
+    )
 
 
 @router.post("/logout")
