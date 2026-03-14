@@ -88,12 +88,22 @@ async def create_user(
 async def update_user(user_id: UUID, update_data: dict) -> User | None:
     """Обновить данные пользователя"""
     async with get_async_db() as session:
-        stmt = (
-            update(User)
-            .where(User.id == user_id)
-            .values(**update_data)
-            .returning(User)
-        )
-        result = await session.execute(stmt)
-        await session.commit()
-        return result.scalar_one_or_none()
+        try:
+            stmt = (
+                update(User)
+                .where(User.id == user_id)
+                .values(**update_data)
+            )
+            await session.execute(stmt)
+            await session.commit()
+            
+            # Перезагружаем пользователя с отношениями после обновления
+            result = await session.execute(
+                select(User)
+                .options(selectinload(User.roles))
+                .filter(User.id == user_id)
+            )
+            return result.scalar_one_or_none()
+        except IntegrityError:
+            await session.rollback()
+            raise

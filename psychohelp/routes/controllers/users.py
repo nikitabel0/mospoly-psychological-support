@@ -6,6 +6,7 @@ from starlette.status import (
     HTTP_401_UNAUTHORIZED,
     HTTP_404_NOT_FOUND,
     HTTP_422_UNPROCESSABLE_ENTITY, HTTP_403_FORBIDDEN,
+    HTTP_500_INTERNAL_SERVER_ERROR,
 )
 from pydantic import EmailStr
 
@@ -138,7 +139,15 @@ async def update_my_profile(
             detail="Пользователь не авторизован"
         )
 
-    user_id = get_user_id_from_token(token)
+    try:
+        user_id = get_user_id_from_token(token)
+    except Exception as e:
+        logger.error(f"Ошибка при декодировании токена: {e}")
+        raise HTTPException(
+            status_code=HTTP_401_UNAUTHORIZED,
+            detail="Недействительный токен"
+        )
+
     if not user_id:
         raise HTTPException(
             status_code=HTTP_401_UNAUTHORIZED,
@@ -164,6 +173,12 @@ async def update_my_profile(
         )
     except HTTPException as e:
         raise e
+    except Exception as e:
+        logger.error(f"Неожиданная ошибка при обновлении профиля: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Внутренняя ошибка сервера"
+        )
 
     if updated_user is None:
         raise HTTPException(
