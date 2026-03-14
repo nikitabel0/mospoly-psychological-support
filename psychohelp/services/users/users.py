@@ -98,6 +98,8 @@ async def update_profile(
 
     try:
         updated_user = await update_user(target_user_id, update_dict)
+        if updated_user is None:
+            raise UserNotFound()
     except IntegrityError as e:
         # Другие возможные ошибки уникальности (phone_number и т.д.)
         raise HTTPException(

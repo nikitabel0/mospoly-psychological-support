@@ -165,7 +165,13 @@ async def update_my_profile(
     except HTTPException as e:
         raise e
 
-    return UserResponse.from_orm(updated_user)
+    if updated_user is None:
+        raise HTTPException(
+            status_code=HTTP_404_NOT_FOUND,
+            detail="Пользователь не найден"
+        )
+
+    return UserResponse.model_validate(updated_user)
 
 
 @router.put("/{user_id}", response_model=UserResponse)
@@ -198,7 +204,13 @@ async def update_user_by_id(
     except HTTPException as e:
         raise e
 
-    return UserResponse.from_orm(updated_user)
+    if updated_user is None:
+        raise HTTPException(
+            status_code=HTTP_404_NOT_FOUND,
+            detail="Пользователь не найден"
+        )
+
+    return UserResponse.model_validate(updated_user)
 
 
 @router.post("/me/password", status_code=HTTP_200_OK)
