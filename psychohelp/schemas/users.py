@@ -17,6 +17,7 @@ class UserCreateRequest(BaseModel):
     email: EmailStr
     social_media: str | None = Field(None, max_length=50)
     password: str = Field(min_length=8, max_length=256)
+    study_group: Optional[str] = Field(None, max_length=50)
 
 
 class UserBase(BaseModel):
@@ -39,6 +40,7 @@ class UserResponse(BaseModel):
     email: EmailStr
     social_media: str | None = Field(None, max_length=50)
     roles: list[RoleResponse] = []
+    study_group: Optional[str] = None
 
     class Config:
         from_attributes = True
@@ -62,6 +64,7 @@ class UserUpdateRequest(BaseModel):
     phone_number: Optional[str] = Field(None, min_length=10, max_length=20)
     email: Optional[EmailStr] = None
     social_media: Optional[str] = Field(None, max_length=50)
+    study_group: Optional[str] = Field(None, max_length=50)
 
 
 class PasswordChangeRequest(BaseModel):
