@@ -37,6 +37,7 @@ async def register_user(
     password: str,
     middle_name: str | None = None,
     social_media: str | None = None,
+    study_group: str | None = None,
 ) -> tuple[User, str]:
     new_user = await create_user(
         first_name,
@@ -46,6 +47,7 @@ async def register_user(
         hash_password(password),
         middle_name,
         social_media,
+        study_group,
     )
     return new_user, create_access_token(new_user.id), create_refresh_token(new_user.id)
 

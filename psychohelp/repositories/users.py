@@ -42,6 +42,7 @@ async def create_user(
     hashed_password: str,
     middle_name: str | None = None,
     social_media: str | None = None,
+    study_group: str | None = None,
 ) -> User:
     async with get_async_db() as session:
         try:
@@ -59,6 +60,7 @@ async def create_user(
                 email=email,
                 social_media=social_media,
                 password=hashed_password,
+                study_group=study_group,
             )
 
             session.add(new_user)
