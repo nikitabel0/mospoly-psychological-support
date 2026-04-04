@@ -27,6 +27,7 @@ class AppointmentBase(BaseModel):
 
 
 class AppointmentCreateRequest(BaseModel):
+    application_id: UUID | None = None
     patient_id: UUID
     psychologist_id: UUID
     type: AppointmentType

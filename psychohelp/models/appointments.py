@@ -27,6 +27,13 @@ class Appointment(Base):
     patient_id = Column(
         UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False
     )
+    application_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("applications.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True
+    )
+    application = relationship("Application", back_populates="appointment")
     psychologist_id = Column(
         UUID(as_uuid=True), ForeignKey("psychologists.id", ondelete="CASCADE"), nullable=False
     )
