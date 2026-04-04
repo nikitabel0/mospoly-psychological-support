@@ -1,6 +1,4 @@
-# psychohelp/schemas/applications.py
-
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, EmailStr, Field, field_validator
 from uuid import UUID
 from datetime import datetime
 from enum import Enum
@@ -15,24 +13,73 @@ class UniversityStatus(str, Enum):
 
 
 class ApplicationStatus(str, Enum):
-    NEW = "новая"
-    IN_PROGRESS = "в обработке"
-    COMPLETED = "завершена"
-    REJECTED = "отклонена"
+    NEW = "new"
+    IN_PROGRESS = "in_progress"
+    AWAITING_USER_CONFIRMATION = "awaiting_user_confirmation"
+    COMPLETED = "completed"
+    REJECTED = "rejected"
+    CANCELLED = "cancelled"
+    EXPIRED = "expired"
+
+
+class CancelInitiator(str, Enum):
+    USER = "user"
+    PSYCHOLOGIST = "psychologist"
+    MANAGER = "manager"
+    SYSTEM = "system"
+
+
+class MeetingType(str, Enum):
+    OFFLINE = "offline"
+    ONLINE = "online"
 
 
 class ApplicationCreateRequest(BaseModel):
     first_name: str = Field(..., min_length=1, max_length=50)
     last_name: str = Field(..., min_length=1, max_length=50)
-    email: EmailStr
-    phone: str = Field(..., min_length=10, max_length=20)
+    email: Optional[EmailStr] = None
+    phone: Optional[str] = Field(None, min_length=10, max_length=20)
     problem_description: str = Field(..., min_length=10, max_length=2000)
-    preferred_campus: str = Field(..., min_length=1, max_length=128)
+    preferred_campus: Optional[str] = Field(None, max_length=128)
     university_status: UniversityStatus
 
+    @field_validator('email', 'phone')
+    def check_contact(cls, v, info):
+        if info.field_name == 'email' and v is None:
+            # если email не передан, проверим phone
+            if info.data.get('phone') is None:
+                raise ValueError('Необходимо указать email или телефон')
+        if info.field_name == 'phone' and v is None:
+            if info.data.get('email') is None:
+                raise ValueError('Необходимо указать email или телефон')
+        return v
 
-class ApplicationUpdateRequest(BaseModel):
-    status: Optional[ApplicationStatus] = None
+
+class AcceptToProcessingRequest(BaseModel):
+    assigned_to: UUID
+
+
+class OfferConsultationRequest(BaseModel):
+    psychologist_id: UUID
+    meeting_type: MeetingType
+    scheduled_at: datetime
+    location_address: Optional[str] = None
+    meeting_url: Optional[str] = None
+
+    @field_validator('scheduled_at')
+    def validate_scheduled_at(cls, v):
+        if v <= datetime.now(v.tzinfo):
+            raise ValueError('Дата и время встречи не могут быть в прошлом')
+        return v
+
+
+class RejectRequest(BaseModel):
+    reject_reason: str = Field(..., min_length=1, max_length=500)
+
+
+class CancelRequest(BaseModel):
+    cancel_reason: str = Field(..., min_length=1, max_length=500)
+    cancel_initiator: CancelInitiator
 
 
 class ApplicationResponse(BaseModel):
@@ -43,12 +90,29 @@ class ApplicationResponse(BaseModel):
     email: str
     phone: str
     problem_description: str
-    preferred_campus: str
+    preferred_campus: Optional[str]
     university_status: UniversityStatus
     status: ApplicationStatus
+    assigned_to: Optional[UUID]
+    psychologist_id: Optional[UUID]
+    meeting_type: Optional[MeetingType]
+    scheduled_at: Optional[datetime]
+    location_address: Optional[str]
+    meeting_url: Optional[str]
     created_at: datetime
     updated_at: datetime
+    processing_started_at: Optional[datetime]
+    confirmation_requested_at: Optional[datetime]
+    completed_at: Optional[datetime]
+    rejected_at: Optional[datetime]
+    cancelled_at: Optional[datetime]
+    expired_at: Optional[datetime]
+    reject_reason: Optional[str]
+    cancel_reason: Optional[str]
+    cancel_initiator: Optional[CancelInitiator]
+    internal_comment: Optional[str]
     appointment_id: Optional[UUID]
+    version: int
 
     class Config:
         from_attributes = True
