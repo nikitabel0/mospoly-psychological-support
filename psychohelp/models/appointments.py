@@ -33,7 +33,11 @@ class Appointment(Base):
         nullable=True,
         index=True
     )
-    application = relationship("Application", back_populates="appointment")
+    application = relationship(
+        "Application",
+        foreign_keys=[application_id],
+        back_populates="appointment",
+    )
     psychologist_id = Column(
         UUID(as_uuid=True), ForeignKey("psychologists.id", ondelete="CASCADE"), nullable=False
     )

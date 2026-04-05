@@ -80,4 +80,6 @@ class Application(Base):
     user = relationship("User", foreign_keys=[user_id])
     assigned_to_user = relationship("User", foreign_keys=[assigned_to])
     psychologist = relationship("Psychologist", foreign_keys=[psychologist_id])
-    appointment = relationship("Appointment", foreign_keys=[appointment_id])
+    appointment = relationship(
+        "Appointment", foreign_keys=[appointment_id], back_populates="application"
+    )
