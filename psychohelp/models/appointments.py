@@ -36,7 +36,7 @@ class Appointment(Base):
     application = relationship(
         "Application",
         foreign_keys=[application_id],
-        back_populates="appointment",
+        overlaps="appointment",
     )
     psychologist_id = Column(
         UUID(as_uuid=True), ForeignKey("psychologists.id", ondelete="CASCADE"), nullable=False

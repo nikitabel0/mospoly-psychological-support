@@ -81,5 +81,7 @@ class Application(Base):
     assigned_to_user = relationship("User", foreign_keys=[assigned_to])
     psychologist = relationship("Psychologist", foreign_keys=[psychologist_id])
     appointment = relationship(
-        "Appointment", foreign_keys=[appointment_id], back_populates="application"
+        "Appointment",
+        foreign_keys=[appointment_id],
+        overlaps="application",
     )
