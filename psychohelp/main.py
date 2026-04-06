@@ -61,6 +61,8 @@ def get_application() -> FastAPI:
             "https://95.31.169.106:3000",
             "http://95.31.169.106:8000",
             "https://95.31.169.106:8000",
+            "https://psychohelp-mospoly.ru",
+            "https://www.psychohelp-mospoly.ru",
         ],
         allow_credentials=True,
         allow_methods=["*"],
