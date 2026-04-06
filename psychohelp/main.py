@@ -18,6 +18,9 @@ from psychohelp.models import users, psychologists, appointments, reviews, roles
 
 import uvicorn
 
+from slowapi.errors import RateLimitExceeded
+from slowapi import _rate_limit_exceeded_handler
+
 log_level = os.getenv("LOG_LEVEL", "DEBUG")
 log_file_path = os.getenv("LOG_FILE")
 
@@ -43,6 +46,8 @@ engine = create_async_engine(config.DATABASE_URL, echo=False)
 def get_application() -> FastAPI:
     application = FastAPI()
     application.include_router(api_router)
+
+    application.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
     application.add_middleware(
         CORSMiddleware,
