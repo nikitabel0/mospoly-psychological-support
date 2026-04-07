@@ -12,7 +12,6 @@ dependencies = [
     "uvicorn[standard]>=0.24.0",
     "sqlalchemy==2.0.35",
     "asyncpg==0.30.0",
-    "passlib[bcrypt]",
     "pyjwt==2.9.0",
     "pydantic[email]>=2.0.0",
     "pydantic-extra-types",
@@ -20,7 +19,7 @@ dependencies = [
     "httpx",
     "anyio",
     "greenlet",
-    "bcrypt==4.3.0",
+    "bcrypt>=4.0.1",
     "alembic>=1.14.1",
     "psycopg2-binary>=2.9.10",
 ]
