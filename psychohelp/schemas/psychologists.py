@@ -1,4 +1,4 @@
-from uuid import UUID
+﻿from uuid import UUID
 
 from pydantic import BaseModel
 
@@ -27,6 +27,17 @@ class PsychologistCreateRequest(BaseModel):
     office: str
     education: str
     short_description: str
+    photo: str | None = None
+
+
+class PsychologistUpdateRequest(BaseModel):
+    experience: str | None = None
+    qualification: str | None = None
+    consult_areas: str | None = None
+    description: str | None = None
+    office: str | None = None
+    education: str | None = None
+    short_description: str | None = None
     photo: str | None = None
 
 
@@ -65,4 +76,3 @@ class PsychologistResponse(BaseModel):
             last_name=psychologist.user.last_name,
             phone_number=psychologist.user.phone_number,
         )
-

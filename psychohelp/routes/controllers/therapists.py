@@ -1,13 +1,20 @@
-from uuid import UUID
+﻿from uuid import UUID
 
 from fastapi import HTTPException, APIRouter, Query, Request
-from starlette.status import HTTP_201_CREATED, HTTP_400_BAD_REQUEST, HTTP_404_NOT_FOUND, HTTP_500_INTERNAL_SERVER_ERROR
+from starlette.status import (
+    HTTP_200_OK,
+    HTTP_201_CREATED,
+    HTTP_400_BAD_REQUEST,
+    HTTP_404_NOT_FOUND,
+    HTTP_500_INTERNAL_SERVER_ERROR,
+)
 
 from psychohelp.config.logging import get_logger
 from psychohelp.services.psychologists import (
     get_psychologist_by_id,
     get_psychologists as srv_get_psychologists,
     create_psychologist,
+    update_psychologist,
     delete_psychologist,
 )
 from psychohelp.repositories.psychologists.exceptions import (
@@ -15,7 +22,11 @@ from psychohelp.repositories.psychologists.exceptions import (
     PsychologistRoleNotFoundException,
     PsychologistAlreadyExistsException,
 )
-from psychohelp.schemas.psychologists import PsychologistResponse, PsychologistCreateRequest
+from psychohelp.schemas.psychologists import (
+    PsychologistResponse,
+    PsychologistCreateRequest,
+    PsychologistUpdateRequest,
+)
 from psychohelp.services.rbac.permissions import require_permission
 from psychohelp.constants.rbac import PermissionCode
 
@@ -25,12 +36,12 @@ router = APIRouter(prefix="/therapists", tags=["therapists"])
 
 @router.get("/{psychologist_id}", response_model=PsychologistResponse)
 async def get_psychologist(psychologist_id: UUID) -> PsychologistResponse:
-    """Получить информацию о конкретном психологе по ID"""
+    """Получить информацию о конкретном психологе по ID."""
     psychologist = await get_psychologist_by_id(psychologist_id)
     if psychologist is None:
         logger.warning(f"Psychologist not found: {psychologist_id}")
         raise HTTPException(status_code=HTTP_404_NOT_FOUND, detail="Psychologist not found")
-    
+
     logger.info(f"Psychologist retrieved: {psychologist_id}")
     return PsychologistResponse.from_orm_psychologist(psychologist)
 
@@ -38,12 +49,12 @@ async def get_psychologist(psychologist_id: UUID) -> PsychologistResponse:
 @router.get("/", response_model=list[PsychologistResponse])
 async def get_psychologists(
     skip: int = Query(0, ge=0, description="Количество записей для пропуска"),
-    take: int = Query(10, gt=0, le=100, description="Количество записей для получения")
+    take: int = Query(10, gt=0, le=100, description="Количество записей для получения"),
 ) -> list[PsychologistResponse]:
-    """Получить список всех психологов с пагинацией"""
+    """Получить список всех психологов с пагинацией."""
     logger.info(f"Fetching psychologists: skip={skip}, take={take}")
     psychologists = await srv_get_psychologists(skip=skip, take=take)
-    
+
     logger.info(f"Retrieved {len(psychologists)} psychologists")
     return [PsychologistResponse.from_orm_psychologist(p) for p in psychologists]
 
@@ -56,18 +67,35 @@ async def create_psychologist_endpoint(request: Request, data: PsychologistCreat
         psychologist = await create_psychologist(data.user_id, psychologist_data)
         logger.info(f"Psychologist created: {psychologist.id} for user {data.user_id}")
         return PsychologistResponse.from_orm_psychologist(psychologist)
-    
+
     except UserNotFoundForPsychologistException as e:
         logger.error(f"User not found: {data.user_id}")
         raise HTTPException(status_code=HTTP_404_NOT_FOUND, detail=str(e))
-    
+
     except PsychologistRoleNotFoundException as e:
         logger.error("Psychologist role not found in database")
         raise HTTPException(status_code=HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
-    
+
     except PsychologistAlreadyExistsException as e:
         logger.warning(f"Psychologist already exists for user: {data.user_id}")
         raise HTTPException(status_code=HTTP_400_BAD_REQUEST, detail=str(e))
+
+
+@router.put("/{psychologist_id}", response_model=PsychologistResponse, status_code=HTTP_200_OK)
+@require_permission(PermissionCode.PSYCHOLOGISTS_MANAGE)
+async def update_psychologist_endpoint(
+    request: Request,
+    psychologist_id: UUID,
+    data: PsychologistUpdateRequest,
+) -> PsychologistResponse:
+    update_data = data.model_dump(exclude_unset=True)
+    psychologist = await update_psychologist(psychologist_id, update_data)
+    if psychologist is None:
+        logger.warning(f"Psychologist not found for update: {psychologist_id}")
+        raise HTTPException(status_code=HTTP_404_NOT_FOUND, detail="Psychologist not found")
+
+    logger.info(f"Psychologist updated: {psychologist_id}")
+    return PsychologistResponse.from_orm_psychologist(psychologist)
 
 
 @router.delete("/{psychologist_id}")
@@ -77,7 +105,6 @@ async def delete_psychologist_endpoint(request: Request, psychologist_id: UUID) 
     if not deleted:
         logger.warning(f"Psychologist not found for deletion: {psychologist_id}")
         raise HTTPException(status_code=HTTP_404_NOT_FOUND, detail="Psychologist not found")
-    
+
     logger.info(f"Psychologist deleted: {psychologist_id}")
     return {"message": "Psychologist successfully deleted"}
-

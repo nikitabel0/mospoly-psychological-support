@@ -1,7 +1,7 @@
-from pydantic import BaseModel, EmailStr, Field
+﻿from pydantic import AliasChoices, BaseModel, ConfigDict, EmailStr, Field
 from pydantic_extra_types.phone_numbers import PhoneNumber
 from typing import Optional
-from psychohelp.schemas.roles import RoleResponse 
+from psychohelp.schemas.roles import RoleResponse
 from uuid import UUID
 
 
@@ -57,17 +57,25 @@ class LoginRequest(BaseModel):
 
 
 class UserUpdateRequest(BaseModel):
-    """Схема для обновления профиля (все поля опциональны)"""
+    """Схема для обновления профиля (все поля опциональны)."""
+
+    model_config = ConfigDict(populate_by_name=True)
+
     first_name: Optional[str] = Field(None, min_length=1, max_length=50)
     middle_name: Optional[str] = Field(None, min_length=1, max_length=50)
     last_name: Optional[str] = Field(None, min_length=1, max_length=50)
     phone_number: Optional[str] = Field(None, min_length=10, max_length=20)
     email: Optional[EmailStr] = None
     social_media: Optional[str] = Field(None, max_length=50)
-    study_group: Optional[str] = Field(None, max_length=50)
+    study_group: Optional[str] = Field(
+        None,
+        max_length=50,
+        validation_alias=AliasChoices("study_group", "group"),
+    )
 
 
 class PasswordChangeRequest(BaseModel):
-    """Схема для смены пароля"""
+    """Схема для смены пароля."""
+
     old_password: str = Field(..., min_length=8, max_length=64)
     new_password: str = Field(..., min_length=8, max_length=64)
