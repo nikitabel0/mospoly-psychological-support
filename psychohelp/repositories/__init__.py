@@ -1,13 +1,10 @@
 from psychohelp.config.config import config
-from passlib.context import CryptContext
 from datetime import datetime, timedelta, timezone
 
 from uuid import UUID
 
+import bcrypt
 import jwt
-
-
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
 def create_access_token(sub: str) -> str:
@@ -52,8 +49,18 @@ def get_user_id_from_token(token: str) -> UUID:
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
-    return pwd_context.verify(plain_password, hashed_password)
+    plain = (plain_password or "").strip()
+    h = (hashed_password or "").strip()
+    if not plain or not h or not h.startswith(("$2a$", "$2b$", "$2y$")):
+        return False
+    try:
+        return bcrypt.checkpw(plain.encode("utf-8"), h.encode("utf-8"))
+    except (ValueError, TypeError):
+        return False
 
 
 def hash_password(password: str) -> str:
-    return pwd_context.hash(password)
+    return bcrypt.hashpw(
+        password.encode("utf-8"),
+        bcrypt.gensalt(rounds=12),
+    ).decode("utf-8")

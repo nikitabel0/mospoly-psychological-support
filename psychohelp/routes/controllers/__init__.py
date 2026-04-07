@@ -12,7 +12,8 @@ def set_token_in_cookie(response: Response, token: str):
         expires=datetime.now(timezone.utc) + timedelta(minutes=config.ACCESS_TOKEN_EXPIRE_MINUTES),
         httponly=True,  # Защита от XSS
         secure=False,   # False для HTTP, True для HTTPS
-        samesite="None",  # Для cross-site запросов (работает с secure=False на некоторых браузерах в dev режиме)
+        # samesite не указываем - браузер использует дефолтное поведение (обычно Lax)
+        # Для HTTP разработки это работает лучше, чем samesite=None (который требует secure=True)
     )
 
 def set_refresh_token_in_cookie(response: Response, refresh_token: str):
@@ -22,5 +23,6 @@ def set_refresh_token_in_cookie(response: Response, refresh_token: str):
         expires=datetime.now(timezone.utc) + timedelta(minutes=config.REFRESH_TOKEN_EXPIRE),
         httponly=True,  # Защита от XSS
         secure=False,   # False для HTTP, True для HTTPS
-        samesite="None",  # Для cross-site запросов (работает с secure=False на некоторых браузерах в dev режиме)
+        # samesite не указываем - браузер использует дефолтное поведение (обычно Lax)
+        # Для HTTP разработки это работает лучше, чем samesite=None (который требует secure=True)
     )
