@@ -199,6 +199,33 @@ async def update_user_by_id(
     token = request.cookies.get("access_token")
     current_user_id = get_user_id_from_token(token) if token else None
 
+    # 1. Проверяем, авторизован ли вообще пользователь
+    if not current_user_id:
+        raise HTTPException(
+            status_code=HTTP_401_UNAUTHORIZED,
+            detail="Пользователь не авторизован"
+        )
+
+    # 2. Получаем данные того, кто делает запрос
+    current_user = await users.get_user_by_id(current_user_id)
+    if current_user is None:
+        raise HTTPException(
+            status_code=HTTP_401_UNAUTHORIZED,
+            detail="Токен недействителен или пользователь удален"
+        )
+
+    # 3. ПРОВЕРКА РОЛЕЙ: Ищем "admin" в списке ролей пользователя
+    is_admin = False
+    if current_user.roles and "admin" in current_user.roles:
+        is_admin = True
+
+    # Если он не админ, бьем по рукам!
+    if not is_admin:
+        raise HTTPException(
+            status_code=HTTP_403_FORBIDDEN,
+            detail="Доступ запрещен. Только для администраторов."
+        )
+
     try:
         updated_user = await update_profile(
             current_user_id=current_user_id,
