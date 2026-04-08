@@ -8,10 +8,12 @@ from psychohelp.config.config import get_async_db
 from psychohelp.models.psychologists import Psychologist
 from psychohelp.models.users import User
 from psychohelp.models.roles import Role
+from psychohelp.models.appointments import Appointment, AppointmentStatus
 from psychohelp.repositories.psychologists.exceptions import (
     UserNotFoundForPsychologistException,
     PsychologistRoleNotFoundException,
     PsychologistAlreadyExistsException,
+    PsychologistHasActiveAppointmentsException,
 )
 
 
@@ -101,6 +103,9 @@ async def delete_psychologist(psychologist_id: UUID) -> bool:
         
     Returns:
         bool: True если удалено, False если не найдено
+        
+    Raises:
+        PsychologistHasActiveAppointmentsException: Если у психолога есть активные записи
     """
     async with get_async_db() as session:
         async with session.begin():
@@ -113,6 +118,19 @@ async def delete_psychologist(psychologist_id: UUID) -> bool:
             
             if psychologist is None:
                 return False
+            
+            # Проверяем наличие активных записей
+            active_appointments_result = await session.execute(
+                select(Appointment)
+                .where(
+                    Appointment.psychologist_id == psychologist_id,
+                    Appointment.status.in_([AppointmentStatus.Approved, AppointmentStatus.Accepted])
+                )
+            )
+            active_appointments = active_appointments_result.scalars().all()
+            
+            if active_appointments:
+                raise PsychologistHasActiveAppointmentsException(psychologist_id)
             
             user = psychologist.user
             
