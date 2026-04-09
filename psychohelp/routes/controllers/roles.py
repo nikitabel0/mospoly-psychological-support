@@ -1,10 +1,12 @@
 from uuid import UUID
 
-from fastapi import HTTPException, APIRouter
+from fastapi import HTTPException, APIRouter, Request
 
 from starlette.status import (
     HTTP_404_NOT_FOUND,
     HTTP_500_INTERNAL_SERVER_ERROR,
+    HTTP_401_UNAUTHORIZED,
+    HTTP_403_FORBIDDEN
 )
 
 from psychohelp.config.logging import get_logger
@@ -18,27 +20,44 @@ from psychohelp.repositories.rbac.exceptions import (
 )
 from psychohelp.schemas.roles import RoleAssignRequest, RoleRemoveRequest
 
+from psychohelp.repositories import get_user_id_from_token
+from psychohelp.services.users import users
+
 logger = get_logger(__name__)
 router = APIRouter(prefix="/roles", tags=["roles"])
 
 
 @router.post("/{user_id}/assign")
-async def assign_role(user_id: UUID, request: RoleAssignRequest) -> dict[str, str]:
+async def assign_role(request: Request, user_id: UUID, role_request: RoleAssignRequest) -> dict[str, str]:
     """Назначить роль пользователю"""
+    token = request.cookies.get("access_token")
+    if not token:
+        raise HTTPException(status_code=HTTP_401_UNAUTHORIZED, detail="Не авторизован")
+
     try:
-        assigned = await assign_role_to_user(user_id, request.role_code)
+        current_user_id = get_user_id_from_token(token)
+    except Exception:
+        raise HTTPException(status_code=HTTP_401_UNAUTHORIZED, detail="Недействительный токен")
+
+    current_user = await users.get_user_by_id(current_user_id)
+    if not current_user or not current_user.roles or "admin" not in current_user.roles:
+        raise HTTPException(status_code=HTTP_403_FORBIDDEN, detail="Только для администраторов")
+
+    try:
+        assigned = await assign_role_to_user(user_id, role_request.role_code)
         if not assigned:
-            logger.info(f"Role '{request.role_code.value}' already assigned to user {user_id}")
-            return {"message": f"Роль '{request.role_code.value}' уже назначена пользователю"}
-        logger.info(f"Role '{request.role_code.value}' successfully assigned to user {user_id}")
-        return {"message": f"Роль '{request.role_code.value}' успешно назначена"}
-    
+            logger.info(f"Role '{role_request.role_code.value}' already assigned to user {user_id}")
+            return {"message": f"Роль '{role_request.role_code.value}' уже назначена пользователю"}
+        logger.info(f"Role '{role_request.role_code.value}' successfully assigned to user {user_id}")
+        return {"message": f"Роль '{role_request.role_code.value}' успешно назначена"}
+
     except (UserNotFoundException, RoleNotFoundException) as e:
         logger.warning(f"Failed to assign role: {str(e)}")
         raise HTTPException(status_code=HTTP_404_NOT_FOUND, detail=str(e))
-    
+
     except Exception as e:
-        logger.exception(f"Unexpected error assigning role '{request.role_code.value}' to user {user_id}: {str(e)}")
+        logger.exception(
+            f"Unexpected error assigning role '{role_request.role_code.value}' to user {user_id}: {str(e)}")
         raise HTTPException(
             status_code=HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Не удалось назначить роль"
@@ -46,25 +65,41 @@ async def assign_role(user_id: UUID, request: RoleAssignRequest) -> dict[str, st
 
 
 @router.post("/{user_id}/remove")
-async def remove_role(user_id: UUID, request: RoleRemoveRequest) -> dict[str, str]:
+async def remove_role(request: Request, user_id: UUID, role_request: RoleRemoveRequest) -> dict[str, str]:
     """Убрать роль у пользователя"""
+
+    # === НАЧАЛО БРОНИРОВАННОЙ ДВЕРИ ===
+    token = request.cookies.get("access_token")
+    if not token:
+        raise HTTPException(status_code=HTTP_401_UNAUTHORIZED, detail="Не авторизован")
+
     try:
-        removed = await remove_role_from_user(user_id, request.role_code)
+        current_user_id = get_user_id_from_token(token)
+    except Exception:
+        raise HTTPException(status_code=HTTP_401_UNAUTHORIZED, detail="Недействительный токен")
+
+    current_user = await users.get_user_by_id(current_user_id)
+    if not current_user or not current_user.roles or "admin" not in current_user.roles:
+        raise HTTPException(status_code=HTTP_403_FORBIDDEN, detail="Только для администраторов")
+    # === КОНЕЦ БРОНИРОВАННОЙ ДВЕРИ ===
+
+    try:
+        removed = await remove_role_from_user(user_id, role_request.role_code)
         if not removed:
-            logger.info(f"Role '{request.role_code.value}' was not assigned to user {user_id}")
-            return {"message": f"Роль '{request.role_code.value}' не была назначена пользователю"}
-        logger.info(f"Role '{request.role_code.value}' successfully removed from user {user_id}")
-        return {"message": f"Роль '{request.role_code.value}' успешно удалена"}
-    
+            logger.info(f"Role '{role_request.role_code.value}' was not assigned to user {user_id}")
+            return {"message": f"Роль '{role_request.role_code.value}' не была назначена пользователю"}
+        logger.info(f"Role '{role_request.role_code.value}' successfully removed from user {user_id}")
+        return {"message": f"Роль '{role_request.role_code.value}' успешно удалена"}
+
     except UserNotFoundException as e:
         logger.warning(f"Failed to remove role: {str(e)}")
         raise HTTPException(status_code=HTTP_404_NOT_FOUND, detail=str(e))
-    
+
     except Exception as e:
-        logger.exception(f"Unexpected error removing role '{request.role_code.value}' from user {user_id}: {str(e)}")
+        logger.exception(
+            f"Unexpected error removing role '{role_request.role_code.value}' from user {user_id}: {str(e)}")
         raise HTTPException(
             status_code=HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Не удалось удалить роль"
         )
-
 
