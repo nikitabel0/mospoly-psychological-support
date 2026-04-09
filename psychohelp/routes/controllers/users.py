@@ -29,6 +29,10 @@ from psychohelp.services.users.exceptions import PermissionDenied, UserNotFound
 from psychohelp.repositories import get_user_id_from_token
 
 logger = get_logger(__name__)
+from slowapi import Limiter
+from slowapi.util import get_remote_address
+
+limiter = Limiter(key_func=get_remote_address)
 router = APIRouter(prefix="/users", tags=["users"])
 
 
@@ -75,7 +79,8 @@ async def register_users(user_data: UserCreateRequest, response: Response) -> Us
 
 
 @router.post("/login", response_model=UserResponse)
-async def login(data: LoginRequest, response: Response) -> UserResponse:
+@limiter.limit("5/minute")
+async def login(request: Request, data: LoginRequest, response: Response) -> UserResponse:
     try:
         user_with_token = await users.login_user(data.email, data.password)
         user = user_with_token.user

@@ -71,3 +71,4 @@ yarn-error.log
 /static/
 dist/
 build/
+.claude/
