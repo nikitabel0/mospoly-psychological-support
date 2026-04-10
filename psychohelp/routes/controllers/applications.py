@@ -41,6 +41,15 @@ logger = get_logger(__name__)
 router = APIRouter(prefix="/applications", tags=["applications"])
 
 
+@router.get("/university-statuses", summary="Получить статусы в университете")
+async def get_university_statuses() -> list[str]:
+    """
+        Возвращает список всех доступных статусов в университете
+        (студент, аспирант и т.д.) для выпадающего списка на фронтенде.
+    """
+    return [status.value for status in UniversityStatus]
+
+
 # Вспомогательные функции проверки прав (можно вынести в отдельный модуль)
 async def _is_manager_or_psychologist(user_id: UUID) -> bool:
     user = await get_user_by_id(user_id)
@@ -234,11 +243,3 @@ async def cancel_application_endpoint(
         raise HTTPException(status_code=HTTP_409_CONFLICT, detail=str(e))
     except ValidationError as e:
         raise HTTPException(status_code=HTTP_400_BAD_REQUEST, detail=str(e))
-
-@router.get("/university-statuses", summary="Получить статусы в университете")
-async def get_university_statuses() -> list[str]:
-    """
-        Возвращает список всех доступных статусов в университете
-        (студент, аспирант и т.д.) для выпадающего списка на фронтенде.
-    """
-    return [status.value for status in UniversityStatus]
