@@ -28,7 +28,7 @@ from psychohelp.schemas.applications import (
     AcceptToProcessingRequest,
     OfferConsultationRequest,
     RejectRequest,
-    CancelRequest,
+    CancelRequest, UniversityStatus,
 )
 from psychohelp.services.rbac.permissions import require_permission
 from psychohelp.constants.rbac import PermissionCode
@@ -234,3 +234,11 @@ async def cancel_application_endpoint(
         raise HTTPException(status_code=HTTP_409_CONFLICT, detail=str(e))
     except ValidationError as e:
         raise HTTPException(status_code=HTTP_400_BAD_REQUEST, detail=str(e))
+
+@router.get("/university-statuses", summary="Получить статусы в университете")
+async def get_university_statuses() -> list[str]:
+    """
+        Возвращает список всех доступных статусов в университете
+        (студент, аспирант и т.д.) для выпадающего списка на фронтенде.
+    """
+    return [status.value for status in UniversityStatus]
