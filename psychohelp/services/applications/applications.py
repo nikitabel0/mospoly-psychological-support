@@ -13,6 +13,10 @@ from psychohelp.services.applications.exceptions import (
 from psychohelp.schemas.applications import ApplicationCreateRequest, OfferConsultationRequest
 from psychohelp.models.applications import Application, ApplicationStatus
 from psychohelp.repositories.users import get_user_by_id
+from psychohelp.repositories.psychologists.psychologists import (
+    get_psychologist_by_id,
+    get_psychologist_by_user_id,
+)
 
 
 async def create_application(user_id: UUID | None, data: ApplicationCreateRequest) -> Application:
@@ -69,9 +73,19 @@ async def offer_consultation(
     application = await repo.get_application_by_id(application_id)
     if not application:
         raise ApplicationNotFoundError()
+
+    psychologist = await get_psychologist_by_id(offer_data.psychologist_id)
+    if psychologist is None:
+        psychologist = await get_psychologist_by_user_id(offer_data.psychologist_id)
+    if psychologist is None:
+        raise ValidationError("Психолог не найден")
+
+    offer_payload = offer_data.model_dump()
+    offer_payload["psychologist_id"] = psychologist.id
+
     sm = ApplicationStateMachine(application)
     try:
-        updated = await sm.offer_consultation(offer_data.model_dump(), actor_id, "psychologist")
+        updated = await sm.offer_consultation(offer_payload, actor_id, "psychologist")
         return updated
     except (InvalidStatusTransitionError, ConflictError, ValidationError) as e:
         raise e
@@ -79,7 +93,7 @@ async def offer_consultation(
 
 async def confirm_application(
     application_id: UUID,
-    appointment_id: UUID,
+    appointment_id: UUID | None,
     actor_id: UUID,
     is_owner: bool
 ) -> Application:
