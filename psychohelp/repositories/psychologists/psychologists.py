@@ -27,6 +27,18 @@ async def get_psychologist_by_id(psychologist_id: UUID) -> Psychologist | None:
     return psychologist
 
 
+async def get_psychologist_by_user_id(user_id: UUID) -> Psychologist | None:
+    async with get_async_db() as session:
+        result = await session.execute(
+            select(Psychologist)
+            .options(selectinload(Psychologist.user))
+            .filter(Psychologist.user_id == user_id)
+        )
+        psychologist = result.scalar_one_or_none()
+
+    return psychologist
+
+
 async def get_psychologists(skip: int = 0, take: int = 10) -> list[Psychologist]:
     """
     Получить список психологов с пагинацией

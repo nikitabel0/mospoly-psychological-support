@@ -10,7 +10,10 @@ from psychohelp.repositories.appointments import (
     cancel_appointment_by_id as repo_cancel_appointment_by_id,
     get_appointments_by_user_id as repo_get_appointments_by_user_id,
 )
-from psychohelp.repositories.psychologists.psychologists import get_psychologist_by_id
+from psychohelp.repositories.psychologists.psychologists import (
+    get_psychologist_by_id,
+    get_psychologist_by_user_id,
+)
 from psychohelp.repositories.users import get_user_by_id
 from psychohelp.models.appointments import Appointment, AppointmentType, AppointmentStatus
 from psychohelp.services.appointments import exceptions as exc
@@ -56,6 +59,9 @@ async def create_appointment(
         raise exc.PatientNotFoundException(patient_id)
 
     psychologist = await get_psychologist_by_id(psychologist_id)
+    if psychologist is None:
+        # Backward-compatible behavior: some clients send psychologist user_id here.
+        psychologist = await get_psychologist_by_user_id(psychologist_id)
     if psychologist is None:
         raise exc.PsychologistNotFoundException(psychologist_id)
 
