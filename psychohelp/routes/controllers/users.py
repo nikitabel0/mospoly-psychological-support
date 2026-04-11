@@ -93,7 +93,7 @@ async def login(request: Request, data: LoginRequest, response: Response) -> Use
         return user
     except (users_exceptions.UserNotFound, users_exceptions.WrongPassword):
         raise HTTPException(
-            status_code=HTTP_401_UNAUTHORIZED, detail="Неверные данные"
+            status_code=HTTP_403_FORBIDDEN, detail="Неверные данные"
     )
 
 
