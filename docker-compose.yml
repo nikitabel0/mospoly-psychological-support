@@ -19,7 +19,7 @@ services:
       - db
     volumes:
       - .:/app
-      - /srv/images:/srv/images
+      - ./srv/images:/srv/images
   db:
     image: postgres:17
     container_name: db
