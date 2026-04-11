@@ -1,7 +1,13 @@
 from uuid import UUID
 
-from fastapi import HTTPException, APIRouter, Query, Request
-from starlette.status import HTTP_201_CREATED, HTTP_400_BAD_REQUEST, HTTP_404_NOT_FOUND, HTTP_500_INTERNAL_SERVER_ERROR
+from fastapi import HTTPException, APIRouter, Query, Request, Depends
+from starlette.status import (
+    HTTP_201_CREATED,
+    HTTP_400_BAD_REQUEST,
+    HTTP_403_FORBIDDEN,
+    HTTP_404_NOT_FOUND,
+    HTTP_500_INTERNAL_SERVER_ERROR,
+)
 
 from psychohelp.config.logging import get_logger
 from psychohelp.services.psychologists import (
@@ -16,8 +22,10 @@ from psychohelp.repositories.psychologists.exceptions import (
     PsychologistAlreadyExistsException,
 )
 from psychohelp.schemas.psychologists import PsychologistResponse, PsychologistCreateRequest
-from psychohelp.services.rbac.permissions import require_permission
-from psychohelp.constants.rbac import PermissionCode
+from psychohelp.services.rbac.permissions import require_permission, user_has_permission
+from psychohelp.constants.rbac import PermissionCode, RoleCode
+from psychohelp.dependencies.auth import get_current_user
+from psychohelp.models.users import User
 
 logger = get_logger(__name__)
 router = APIRouter(prefix="/therapists", tags=["therapists"])
@@ -49,9 +57,25 @@ async def get_psychologists(
 
 
 @router.post("/", response_model=PsychologistResponse, status_code=HTTP_201_CREATED)
-@require_permission(PermissionCode.PSYCHOLOGISTS_MANAGE)
-async def create_psychologist_endpoint(request: Request, data: PsychologistCreateRequest) -> PsychologistResponse:
+async def create_psychologist_endpoint(
+    request: Request,
+    data: PsychologistCreateRequest,
+    current_user: User = Depends(get_current_user),
+) -> PsychologistResponse:
     try:
+        role_codes = {role.code for role in current_user.roles}
+        is_manage_allowed = await user_has_permission(
+            current_user.id, PermissionCode.PSYCHOLOGISTS_MANAGE
+        )
+        is_psychologist = RoleCode.PSYCHOLOGIST in role_codes
+
+        if not is_manage_allowed:
+            if not is_psychologist or data.user_id != current_user.id:
+                raise HTTPException(
+                    status_code=HTTP_403_FORBIDDEN,
+                    detail=f"Недостаточно прав: требуется {PermissionCode.PSYCHOLOGISTS_MANAGE.value}",
+                )
+
         psychologist_data = data.model_dump(exclude={"user_id"})
         psychologist = await create_psychologist(data.user_id, psychologist_data)
         logger.info(f"Psychologist created: {psychologist.id} for user {data.user_id}")
