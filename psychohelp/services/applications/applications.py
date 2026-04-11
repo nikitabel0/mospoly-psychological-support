@@ -93,7 +93,7 @@ async def offer_consultation(
 
 async def confirm_application(
     application_id: UUID,
-    appointment_id: UUID,
+    appointment_id: UUID | None,
     actor_id: UUID,
     is_owner: bool
 ) -> Application:

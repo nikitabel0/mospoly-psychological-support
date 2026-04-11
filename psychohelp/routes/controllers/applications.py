@@ -157,14 +157,17 @@ async def offer_consultation_endpoint(
 @router.post("/{application_id}/confirm", response_model=ApplicationResponse)
 async def confirm_application_endpoint(
     application_id: UUID,
-    appointment_id: UUID,
+    appointment_id: UUID | None = None,
     current_user: User = Depends(get_current_user)
 ) -> ApplicationResponse:
     application = await get_application_for_user(application_id, current_user.id, is_manager=False)
     if not application or application.user_id != current_user.id:
         raise HTTPException(status_code=HTTP_403_FORBIDDEN, detail="Вы можете подтверждать только свои заявки")
+    resolved_appointment_id = appointment_id or application.appointment_id
     try:
-        updated = await confirm_application(application_id, appointment_id, current_user.id, is_owner=True)
+        updated = await confirm_application(
+            application_id, resolved_appointment_id, current_user.id, is_owner=True
+        )
         return ApplicationResponse.from_orm(updated)
     except ApplicationNotFoundError:
         raise HTTPException(status_code=HTTP_404_NOT_FOUND, detail="Заявка не найдена")
@@ -173,7 +176,7 @@ async def confirm_application_endpoint(
     except ConflictError as e:
         raise HTTPException(status_code=HTTP_409_CONFLICT, detail=str(e))
     except ValidationError as e:
-        raise HTTPException(status_code=HTTP_400_BAD_REQUEST, detail=str(e))
+        raise HTTPException(status_code=HTTP_409_CONFLICT, detail=str(e))
 
 
 # 7. Отклонить заявку
