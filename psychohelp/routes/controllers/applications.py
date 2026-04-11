@@ -160,7 +160,7 @@ async def confirm_application_endpoint(
     appointment_id: UUID | None = None,
     current_user: User = Depends(get_current_user)
 ) -> ApplicationResponse:
-    application = await get_application_for_user(application_id, current_user.id, is_manager=False)
+    application = await get_application_for_user(application_id, current_user.id, False)
     if not application or application.user_id != current_user.id:
         raise HTTPException(status_code=HTTP_403_FORBIDDEN, detail="Вы можете подтверждать только свои заявки")
     resolved_appointment_id = appointment_id or application.appointment_id
@@ -214,7 +214,7 @@ async def cancel_application_endpoint(
     actor_type = "user"
     is_allowed = False
     if current_user.id:
-        is_owner = (await get_application_for_user(application_id, current_user.id, is_manager=False)).user_id == current_user.id
+        is_owner = (await get_application_for_user(application_id, current_user.id, False)).user_id == current_user.id
         if is_owner:
             is_allowed = True
             actor_type = "user"
