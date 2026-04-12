@@ -3,6 +3,7 @@ from typing import Optional
 from datetime import datetime, timezone
 from fastapi import HTTPException
 from starlette.status import HTTP_404_NOT_FOUND, HTTP_403_FORBIDDEN, HTTP_409_CONFLICT, HTTP_422_UNPROCESSABLE_ENTITY
+from psychohelp.models.applications import ApplicationStatus
 
 from psychohelp.repositories import applications as repo
 from psychohelp.services.applications.state_machine import ApplicationStateMachine
@@ -41,6 +42,34 @@ async def get_application_for_user(application_id: UUID, user_id: UUID | None, i
     if not is_manager_or_psychologist and application.user_id != user_id:
         raise HTTPException(status_code=HTTP_403_FORBIDDEN, detail="Access denied")
     return application
+
+async def get_applications_list(
+    skip: int,
+    limit: int,
+    status: ApplicationStatus | None,
+    assigned_to: UUID | None,
+    current_user_id: UUID,
+    is_manager_or_psychologist: bool,
+    sort_by: str = "created_at",
+    sort_desc: bool = True,
+) -> list[Application]:
+    
+    query_user_id = None
+    query_assigned_to = assigned_to
+
+    if not is_manager_or_psychologist:
+        query_user_id = current_user_id
+        query_assigned_to = None
+
+    return await repo.get_applications(
+        skip=skip,
+        limit=limit,
+        status=status,
+        assigned_to=query_assigned_to,
+        user_id=query_user_id,
+        sort_by=sort_by,
+        sort_desc=sort_desc
+    )
 
 
 async def accept_to_processing(
@@ -99,16 +128,21 @@ async def confirm_application(
 ) -> Application:
     if not is_owner:
         raise AccessDeniedError()
+        
     application = await repo.get_application_by_id(application_id)
     if not application:
         raise ApplicationNotFoundError()
+
+    if application.status == ApplicationStatus.COMPLETED.value:
+        return application
+    
+
     sm = ApplicationStateMachine(application)
     try:
-        updated = await sm.confirm(actor_id, "user", appointment_id)
+        updated = await sm.confirm(actor_id, "user", appointment_id) 
         return updated
     except (InvalidStatusTransitionError, ConflictError, ValidationError) as e:
         raise e
-
 
 async def reject_application(
     application_id: UUID,

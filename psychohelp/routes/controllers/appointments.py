@@ -105,7 +105,7 @@ async def create_appointment(
             detail="Психолог не найден"
         )
     
-    except exc.PsychologistRoleNotFoundException as e:
+    except exc.PsychologistNotFoundException as e:
         logger.error(f"User does not have psychologist role: {e.user_id}")
         raise HTTPException(
             status_code=HTTP_422_UNPROCESSABLE_ENTITY,

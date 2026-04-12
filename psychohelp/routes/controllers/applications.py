@@ -15,6 +15,7 @@ from psychohelp.services.applications.applications import (
     confirm_application,
     reject_application,
     cancel_application,
+    get_applications_list
 )
 from psychohelp.services.applications.exceptions import (
     ApplicationNotFoundError, InvalidStatusTransitionError, AccessDeniedError,
@@ -58,6 +59,7 @@ async def _is_psychologist(user_id: UUID) -> bool:
     return "psychologist" in roles
 
 
+
 # 1. Создание заявки (открыто для всех)
 @router.post("/", response_model=ApplicationResponse, status_code=HTTP_201_CREATED)
 async def create_application_endpoint(
@@ -83,13 +85,20 @@ async def get_applications(
     sort_desc: bool = True,
     current_user: User = Depends(get_current_user)
 ) -> list[ApplicationResponse]:
-    # Проверка прав: только менеджеры/психологи
-    if not await _is_manager_or_psychologist(current_user.id):
-        raise HTTPException(status_code=HTTP_403_FORBIDDEN, detail="Недостаточно прав")
-    applications = await repo_get_applications(
-        skip=skip, limit=limit, status=status,
-        assigned_to=assigned_to, sort_by=sort_by, sort_desc=sort_desc
+    
+    is_staff = await _is_manager_or_psychologist(current_user.id)
+    
+    applications = await get_applications_list(
+        skip=skip, 
+        limit=limit, 
+        status=status,
+        assigned_to=assigned_to,
+        current_user_id=current_user.id,
+        is_manager_or_psychologist=is_staff,
+        sort_by=sort_by, 
+        sort_desc=sort_desc
     )
+    
     return [ApplicationResponse.from_orm(app) for app in applications]
 
 
@@ -157,18 +166,23 @@ async def offer_consultation_endpoint(
 @router.post("/{application_id}/confirm", response_model=ApplicationResponse)
 async def confirm_application_endpoint(
     application_id: UUID,
-    appointment_id: UUID | None = None,
+    appointment_id: UUID | None = None, # Оставляем как опциональный Query-параметр
     current_user: User = Depends(get_current_user)
 ) -> ApplicationResponse:
+    
     application = await get_application_for_user(application_id, current_user.id, False)
+    
     if not application or application.user_id != current_user.id:
         raise HTTPException(status_code=HTTP_403_FORBIDDEN, detail="Вы можете подтверждать только свои заявки")
+        
     resolved_appointment_id = appointment_id or application.appointment_id
+    
     try:
         updated = await confirm_application(
             application_id, resolved_appointment_id, current_user.id, is_owner=True
         )
         return ApplicationResponse.from_orm(updated)
+        
     except ApplicationNotFoundError:
         raise HTTPException(status_code=HTTP_404_NOT_FOUND, detail="Заявка не найдена")
     except InvalidStatusTransitionError as e:
@@ -176,7 +190,8 @@ async def confirm_application_endpoint(
     except ConflictError as e:
         raise HTTPException(status_code=HTTP_409_CONFLICT, detail=str(e))
     except ValidationError as e:
-        raise HTTPException(status_code=HTTP_409_CONFLICT, detail=str(e))
+        # ИСПРАВЛЕНО: Теперь возвращаем 400 и реальный текст ошибки от State Machine
+        raise HTTPException(status_code=HTTP_400_BAD_REQUEST, detail=str(e))
 
 
 # 7. Отклонить заявку
