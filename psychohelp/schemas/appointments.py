@@ -36,3 +36,6 @@ class AppointmentCreateRequest(BaseModel):
     remind_time: datetime | None = None
     venue: str | None = None
     comment: str | None = None
+
+class AppointmentCancelRequest(BaseModel):
+    cancel_reason: str

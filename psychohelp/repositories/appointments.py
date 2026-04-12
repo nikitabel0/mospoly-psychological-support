@@ -58,7 +58,7 @@ async def create_appointment(
         return new_appointment
 
 
-async def cancel_appointment_by_id(appointment_id: UUID, current_user_id: UUID) -> Appointment:
+async def cancel_appointment_by_id(appointment_id: UUID, current_user_id: UUID, cancel_reason: str) -> Appointment:
     async with get_async_db() as session:
         appointment = await session.execute(
             select(Appointment).filter(Appointment.id == appointment_id)
@@ -75,6 +75,7 @@ async def cancel_appointment_by_id(appointment_id: UUID, current_user_id: UUID) 
             raise ValueError("Встреча уже отменена")
 
         appointment.status = AppointmentStatus.Cancelled
+        appointment.cancel_reason = cancel_reason
         appointment.last_change_time = datetime.now(timezone.utc)
 
         try:
