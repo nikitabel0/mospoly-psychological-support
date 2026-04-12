@@ -4,4 +4,4 @@ from psychohelp.models import permissions
 from psychohelp.models import psychologists
 from psychohelp.models import appointments
 from psychohelp.models import reviews
-
+from .applications import Application

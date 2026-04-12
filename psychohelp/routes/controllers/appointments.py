@@ -18,7 +18,7 @@ from psychohelp.services.appointments.appointments import (
     get_appointments_by_user_id,
 )
 from psychohelp.services.appointments import exceptions as exc
-from psychohelp.schemas.appointments import AppointmentBase, AppointmentCreateRequest
+from psychohelp.schemas.appointments import AppointmentBase, AppointmentCreateRequest, AppointmentCancelRequest
 from psychohelp.services.rbac.permissions import require_permission
 from psychohelp.constants.rbac import PermissionCode
 from psychohelp.dependencies.auth import get_current_user, get_optional_user
@@ -147,12 +147,13 @@ async def get_appointment(
 @require_permission(PermissionCode.APPOINTMENTS_CANCEL_OWN)
 async def cancel_appointment(
     id: UUID,
+    request: AppointmentCancelRequest,
     current_user: User = Depends(get_current_user)
 ) -> Response:
     """Отменить запись на прием (для пациента)"""
     try:
-        await cancel_appointment_by_patient(id, current_user.id)
-        logger.info(f"Appointment cancelled: {id} by user: {current_user.id}")
+        await cancel_appointment_by_patient(id, current_user.id, request.cancel_reason)
+        logger.info(f"Appointment cancelled: {id} by user: {current_user.id}. Reason: {request.cancel_reason}")
         return Response(None, status_code=HTTP_200_OK)
     except ValueError as e:
         logger.error(f"Appointment cancellation failed: {str(e)}")
