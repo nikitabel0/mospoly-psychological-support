@@ -39,3 +39,6 @@ class AppointmentCreateRequest(BaseModel):
 
 class AppointmentCancelRequest(BaseModel):
     cancel_reason: str
+
+class AppointmentDoneRequest(BaseModel):
+    conclusion: str

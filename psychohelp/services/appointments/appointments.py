@@ -125,3 +125,13 @@ async def get_appointment_for_user(appointment_id: UUID, user_id: UUID) -> Appoi
     from psychohelp.repositories.appointments import get_appointment_for_user as repo_get
     appointment = await repo_get(appointment_id, user_id)
     return appointment
+
+async def complete_appointment(
+        appointment_id: UUID,
+        psychologist_id: UUID,
+        conclusion: str) -> Appointment:
+    """Завершение записи психологом с добавлением заключения"""
+    from psychohelp.repositories.appointments import complete_appointment_by_psychologist as repo_complete
+
+    appointment = await repo_complete(appointment_id, psychologist_id, conclusion)
+    return appointment

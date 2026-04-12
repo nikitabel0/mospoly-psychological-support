@@ -18,11 +18,13 @@ from psychohelp.services.appointments.appointments import (
     get_appointments_by_user_id,
 )
 from psychohelp.services.appointments import exceptions as exc
-from psychohelp.schemas.appointments import AppointmentBase, AppointmentCreateRequest, AppointmentCancelRequest
+from psychohelp.schemas.appointments import AppointmentBase, AppointmentCreateRequest, AppointmentCancelRequest, \
+    AppointmentDoneRequest
 from psychohelp.services.rbac.permissions import require_permission
 from psychohelp.constants.rbac import PermissionCode
 from psychohelp.dependencies.auth import get_current_user, get_optional_user
 from psychohelp.models.users import User
+from psychohelp.services.appointments.appointments import complete_appointment
 
 logger = get_logger(__name__)
 router = APIRouter(prefix="/appointments", tags=["appointments"])
@@ -157,4 +159,29 @@ async def cancel_appointment(
         return Response(None, status_code=HTTP_200_OK)
     except ValueError as e:
         logger.error(f"Appointment cancellation failed: {str(e)}")
+        raise HTTPException(status_code=HTTP_400_BAD_REQUEST, detail=str(e))
+
+@router.put("/{id}/done", summary="Завершить прием и написать заключение")
+async def complete_appointment_endpoint(
+        id: UUID,
+        request: AppointmentDoneRequest,
+        current_user: User = Depends(get_current_user)
+) -> Response:
+    """
+     Завершает запись на прием (переводит в статус Done).
+     Доступно только психологу, который вел этот прием.
+     Требует обязательного заключения (conclusion).
+     """
+    try:
+        await complete_appointment(id, current_user.id, request.conclusion)
+        logger.info(f"Appointment completed: {id} by psychologist: {current_user.id}")
+        return Response(None, status_code=HTTP_200_OK)
+
+    except PermissionError as e:
+        # Ловим попытку чужого психолога закрыть заявку
+        logger.warning(f"Security warning: User {current_user.id} tried to complete appointment {id}")
+        raise HTTPException(status_code=HTTP_403_FORBIDDEN, detail=str(e))
+
+    except ValueError as e:
+        logger.error(f"Appointment completion failed: {str(e)}")
         raise HTTPException(status_code=HTTP_400_BAD_REQUEST, detail=str(e))
