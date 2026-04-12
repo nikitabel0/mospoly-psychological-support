@@ -12,8 +12,8 @@ class Config:
     POSTGRES_PASSWORD = os.getenv("POSTGRES_PASSWORD", "mypassword")
     POSTGRES_DB = os.getenv("POSTGRES_DB", "mydatabase")
     POSTGRES_HOST = os.getenv("POSTGRES_HOST", "localhost")
-    # fixme: внутри докера постгрес всегда запускается на порту 5432, поэтому используем фиксированный порт
-    POSTGRES_PORT = "5432"
+    # Раньше был захардкожен порт 5432, сейчас берется из env
+    POSTGRES_PORT = os.getenv("POSTGRES_PORT", "5432")
     
     DATABASE_URL = (
         f"postgresql+asyncpg://{POSTGRES_USER}:{POSTGRES_PASSWORD}"
