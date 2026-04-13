@@ -96,3 +96,32 @@ async def get_appointments_by_user_id(user_id: UUID) -> list[Appointment]:
             )
         )
         return result.scalars().all()
+
+async def complete_appointment_by_psychologist(
+        appointment_id: UUID,
+        psychologist_id: UUID,
+        conclusion: str) -> Appointment:
+    async with get_async_db() as session:
+        appointment = await session.execute(
+            select(Appointment).filter(Appointment.id == appointment_id))
+        appointment = appointment.scalar_one_or_none()
+
+        if appointment is None:
+            raise ValueError("Встреча не найдена")
+        if appointment.psychologist_id != psychologist_id:
+            raise PermissionError("Только назначенный психолог может завершить прием")
+        if appointment.status in (AppointmentStatus.Done, AppointmentStatus.Cancelled):
+            raise ValueError("Нельзя завершить эту встречу (она уже завершена или отменена)")
+
+        appointment.status = AppointmentStatus.Done
+        appointment.conclusion = conclusion
+        appointment.last_change_time = datetime.now(timezone.utc)
+
+        try:
+            await session.commit()
+        except IntegrityError:
+            await session.rollback()
+            raise
+
+        return appointment
+
