@@ -29,7 +29,7 @@ from psychohelp.schemas.applications import (
     AcceptToProcessingRequest,
     OfferConsultationRequest,
     RejectRequest,
-    CancelRequest,
+    CancelRequest, UniversityStatus,
 )
 from psychohelp.services.rbac.permissions import require_permission
 from psychohelp.constants.rbac import PermissionCode
@@ -40,6 +40,15 @@ from psychohelp.repositories.users import get_user_by_id
 
 logger = get_logger(__name__)
 router = APIRouter(prefix="/applications", tags=["applications"])
+
+
+@router.get("/university-statuses", summary="Получить статусы в университете")
+async def get_university_statuses() -> list[str]:
+    """
+        Возвращает список всех доступных статусов в университете
+        (студент, аспирант и т.д.) для выпадающего списка на фронтенде.
+    """
+    return [status.value for status in UniversityStatus]
 
 
 # Вспомогательные функции проверки прав (можно вынести в отдельный модуль)
