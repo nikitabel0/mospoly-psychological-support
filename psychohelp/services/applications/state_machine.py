@@ -26,7 +26,7 @@ class ApplicationStateMachine:
         }
         if self.application.status in final_statuses:
             raise InvalidStatusTransitionError(f"Заявка в финальном статусе {self.application.status}, переход невозможен")
-
+        
     async def _transition(self, new_status: str, update_data: dict, actor_id: UUID, actor_type: str, comment: str = None):
         self._check_not_final()
         update_data["status"] = new_status
@@ -39,14 +39,14 @@ class ApplicationStateMachine:
         )
         if not updated:
             raise ConflictError("Заявка была изменена другим пользователем, повторите операцию")
-        await log_application_status_change(
-            application_id=self.application.id,
-            previous_status=self.application.status,
-            new_status=new_status,
-            actor_type=actor_type,
-            actor_id=actor_id,
-            comment=comment
-        )
+        # await log_application_status_change(
+        #     application_id=self.application.id,
+        #     previous_status=self.application.status,
+        #     new_status=new_status,
+        #     actor_type=actor_type,
+        #     actor_id=actor_id,
+        #     comment=comment
+        # )
         return updated
 
     async def accept_to_processing(self, assigned_to: UUID, actor_id: UUID, actor_type: str) -> Application:

@@ -12,7 +12,7 @@ from starlette.status import (
 from uuid import UUID
 from psychohelp.config.logging import get_logger
 from psychohelp.services.appointments.appointments import (
-    get_appointment_for_user,
+    get_appointment_by_id,
     create_appointment as srv_create_appointment,
     cancel_appointment_by_patient,
     get_appointments_by_user_id,
@@ -121,12 +121,12 @@ async def create_appointment(
             detail="Необходимо указать место для онлайн встречи"
         )
     
-    except Exception as e:
-        logger.exception(f"Unexpected error during appointment creation: {str(e)}")
-        raise HTTPException(
-            status_code=HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Не удалось создать запись на прием"
-        )
+    # except Exception as e:
+    #     logger.exception(f"Unexpected error during appointment creation: {str(e)}")
+    #     raise HTTPException(
+    #         status_code=HTTP_500_INTERNAL_SERVER_ERROR,
+    #         detail="Не удалось создать запись на прием"
+    #     )
 
 
 @router.get("/{id}", response_model=AppointmentBase)
@@ -136,7 +136,7 @@ async def get_appointment(
     current_user: User = Depends(get_current_user)
 ) -> AppointmentBase:
     """Получить информацию о конкретной записи"""
-    appointment = await get_appointment_for_user(id, current_user.id)
+    appointment = await get_appointment_by_id(id, current_user.id)
     if appointment is None:
         logger.warning(f"Appointment not found or access denied: {id} for user: {current_user.id}")
         raise HTTPException(status_code=HTTP_404_NOT_FOUND, detail="Встреча не найдена")

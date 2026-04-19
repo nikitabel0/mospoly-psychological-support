@@ -20,8 +20,8 @@ from psychohelp.services.appointments import exceptions as exc
 from psychohelp.services.applications.applications import confirm_application  # импорт функции подтверждения заявки
 
 
-async def get_appointment_by_id(appointment_id: UUID) -> Appointment | None:
-    return await repo_get_appointment_by_id(appointment_id)
+async def get_appointment_by_id(appointment_id: UUID, user_id: UUID) -> Appointment | None:
+    return await repo_get_appointment_by_id(appointment_id, user_id)
 
 
 async def create_appointment(
@@ -41,7 +41,7 @@ async def create_appointment(
     и связывается с этой записью (атомарно в рамках одной транзакции – требуется общий сеанс БД).
     """
     now = datetime.now(timezone.utc)
-    status = AppointmentStatus.Accepted
+    status = AppointmentStatus.awaiting
 
     scheduled_time_utc = scheduled_time.astimezone(timezone.utc) if scheduled_time.tzinfo else scheduled_time.replace(tzinfo=timezone.utc)
     if scheduled_time_utc <= now:
@@ -71,19 +71,20 @@ async def create_appointment(
         case AppointmentType.Online:
             if venue is None:
                 raise exc.VenueRequiredException()
-
+    print(patient_id, psychologist_id, application_id, type, reason, status, scheduled_time, remind_time, now, venue, comment)
     # Создаём запись в БД
     appointment = await repo_create_appointment(
-        patient_id,
-        psychologist.id,
-        type,
-        reason,
-        status,
-        scheduled_time,
-        remind_time,
-        now,
-        venue,
-        comment,
+        patient_id=patient_id,
+        psychologist_id=psychologist.id,
+        application_id=application_id,  # <-- Теперь неважно, на каком месте он стоит в репозитории
+        type=type,
+        reason=reason,
+        status=status,
+        scheduled_time=scheduled_time,
+        remind_time=remind_time,
+        last_change_time=now,           # В репозитории этот параметр называется last_change_time
+        venue=venue,
+        comment=comment,
     )
 
     # Если передан ID заявки – связываем и завершаем заявку
