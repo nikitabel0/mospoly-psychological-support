@@ -14,10 +14,9 @@ class AppointmentType(enum.Enum):
 
 
 class AppointmentStatus(enum.Enum):
-    Approved = "Approved"
-    Accepted = "Accepted"
-    Cancelled = "Cancelled"
-    Done = "Done"
+    awaiting = "awaiting"
+    done = "done"
+    cancelled = "cancelled"
 
 
 class Appointment(Base):
@@ -27,17 +26,20 @@ class Appointment(Base):
     patient_id = Column(
         UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False
     )
+
     application_id = Column(
         UUID(as_uuid=True),
         ForeignKey("applications.id", ondelete="SET NULL"),
         nullable=True,
         index=True
     )
+
     application = relationship(
         "Application",
         foreign_keys=[application_id],
         overlaps="appointment",
     )
+
     psychologist_id = Column(
         UUID(as_uuid=True), ForeignKey("psychologists.id", ondelete="CASCADE"), nullable=False
     )
