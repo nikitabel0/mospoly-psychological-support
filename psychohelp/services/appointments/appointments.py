@@ -10,6 +10,7 @@ from psychohelp.repositories.appointments import (
     cancel_appointment_by_id as repo_cancel_appointment_by_id,
     get_appointments_by_user_id as repo_get_appointments_by_user_id,
 )
+from psychohelp.repositories.applications import get_application_by_id
 from psychohelp.repositories.psychologists.psychologists import (
     get_psychologist_by_id,
     get_psychologist_by_user_id,
@@ -58,6 +59,15 @@ async def create_appointment(
     if patient is None:
         raise exc.PatientNotFoundException(patient_id)
 
+    patient_first_name = patient.first_name
+    patient_last_name = patient.last_name
+    if application_id:
+        application = await get_application_by_id(application_id)
+        if application is None:
+            raise exc.ApplicationNotFoundException(application_id)
+        patient_first_name = application.first_name
+        patient_last_name = application.last_name
+
     psychologist = await get_psychologist_by_id(psychologist_id)
     if psychologist is None:
         # Backward-compatible behavior: some clients send psychologist user_id here.
@@ -71,10 +81,11 @@ async def create_appointment(
         case AppointmentType.Online:
             if venue is None:
                 raise exc.VenueRequiredException()
-    print(patient_id, psychologist_id, application_id, type, reason, status, scheduled_time, remind_time, now, venue, comment)
     # Создаём запись в БД
     appointment = await repo_create_appointment(
         patient_id=patient_id,
+        patient_first_name=patient_first_name,
+        patient_last_name=patient_last_name,
         psychologist_id=psychologist.id,
         application_id=application_id,  # <-- Теперь неважно, на каком месте он стоит в репозитории
         type=type,

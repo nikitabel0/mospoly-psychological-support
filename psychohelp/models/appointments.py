@@ -26,6 +26,8 @@ class Appointment(Base):
     patient_id = Column(
         UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False
     )
+    patient_first_name = Column(String(50), nullable=False)
+    patient_last_name = Column(String(50), nullable=False)
 
     application_id = Column(
         UUID(as_uuid=True),
