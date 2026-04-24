@@ -42,5 +42,16 @@ async def create_psychologist(user_id: UUID, psychologist_data: dict) -> Psychol
 
 
 async def delete_psychologist(psychologist_id: UUID) -> bool:
+    """
+    Удалить психолога
+    
+    Args:
+        psychologist_id: UUID психолога
+        
+    Returns:
+        bool: True если удалено, False если не найдено
+        
+    Raises:
+        PsychologistHasActiveAppointmentsException: Если у психолога есть активные записи
+    """
     return await repo_delete_psychologist(psychologist_id)
-
