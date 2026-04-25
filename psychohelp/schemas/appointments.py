@@ -12,6 +12,8 @@ from datetime import datetime
 class AppointmentBase(BaseModel):
     id: UUID
     patient_id: UUID
+    patient_first_name: str
+    patient_last_name: str
     psychologist_id: UUID
     type: AppointmentType
     reason: str | None = None

@@ -32,6 +32,8 @@ async def get_appointment_by_id(appointment_id: UUID, user_id: UUID) -> Appointm
 
 async def create_appointment(
     patient_id: UUID,
+    patient_first_name: str,
+    patient_last_name: str,
     psychologist_id: UUID,
     type: AppointmentType,
     reason: str | None,
@@ -46,6 +48,8 @@ async def create_appointment(
     async with get_async_db() as session:
         new_appointment = Appointment(
             patient_id=patient_id,
+            patient_first_name=patient_first_name,
+            patient_last_name=patient_last_name,
             psychologist_id=psychologist_id,
             application_id=application_id,
             type=type,
@@ -140,4 +144,3 @@ async def complete_appointment_by_psychologist(
             raise
 
         return appointment
-

@@ -39,3 +39,8 @@ class AppointmentAlreadyCancelledException(Exception):
         self.appointment_id = appointment_id
         super().__init__(f"Запись на прием с ID {appointment_id} уже отменена")
 
+
+class ApplicationNotFoundException(Exception):
+    def __init__(self, application_id):
+        self.application_id = application_id
+        super().__init__(f"Заявка с ID {application_id} не найдена")

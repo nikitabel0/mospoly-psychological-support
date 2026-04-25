@@ -100,6 +100,13 @@ async def create_appointment(
             detail="Пациент не найден"
         )
 
+    except exc.ApplicationNotFoundException as e:
+        logger.error(f"Application not found: {e.application_id}")
+        raise HTTPException(
+            status_code=HTTP_404_NOT_FOUND,
+            detail="Заявка не найдена"
+        )
+
     except exc.PsychologistNotFoundException as e:
         logger.error(f"Psychologist not found: {e.psychologist_id}")
         raise HTTPException(
