@@ -76,7 +76,7 @@ async def create_appointment(
 
 async def cancel_appointment_by_id(appointment_id: UUID, current_user_id: UUID, cancel_reason: str) -> Appointment:
     async with get_async_db() as session:
-        # Добавили selectinload
+        # Благодаря selectinload(Appointment.psychologist) у нас есть доступ к объекту психолога
         query = select(Appointment).options(
             selectinload(Appointment.patient),
             selectinload(Appointment.psychologist).selectinload(Psychologist.user)
@@ -88,7 +88,7 @@ async def cancel_appointment_by_id(appointment_id: UUID, current_user_id: UUID, 
         if appointment is None:
             raise ValueError("Встреча не найдена")
 
-        if appointment.patient_id != current_user_id or appointment.psychologist_id != current_user_id:
+        if appointment.patient_id != current_user_id and appointment.psychologist.user_id != current_user_id:
             raise ValueError("Только пациент или психолог может отменить свою запись")
 
         if appointment.status == AppointmentStatus.cancelled:
