@@ -3,7 +3,6 @@ from typing import Optional
 from datetime import datetime, timezone
 from fastapi import HTTPException
 from starlette.status import HTTP_404_NOT_FOUND, HTTP_403_FORBIDDEN, HTTP_409_CONFLICT, HTTP_422_UNPROCESSABLE_ENTITY
-from psychohelp.models.applications import ApplicationStatus
 
 from psychohelp.repositories import applications as repo
 from psychohelp.services.applications.state_machine import ApplicationStateMachine
@@ -26,7 +25,13 @@ async def create_application(user_id: UUID, data: ApplicationCreateRequest) -> A
     if not user:
         raise HTTPException(status_code=HTTP_404_NOT_FOUND, detail="User not found")
     application_dict["user_id"] = user_id
-    return await repo.create_application(application_dict)
+    
+    # Создаем запись
+    created_app = await repo.create_application(application_dict)
+    
+    # Возвращаем объект со всеми подгруженными связями для Pydantic
+    return await repo.get_application_by_id(created_app.id)
+
 
 async def get_application_for_user(application_id: UUID, user_id: UUID | None, is_manager_or_psychologist: bool) -> Application:
     application = await repo.get_application_by_id(application_id)
@@ -35,6 +40,7 @@ async def get_application_for_user(application_id: UUID, user_id: UUID | None, i
     if not is_manager_or_psychologist and application.user_id != user_id:
         raise HTTPException(status_code=HTTP_403_FORBIDDEN, detail="Access denied")
     return application
+
 
 async def get_applications_list(
     skip: int,
@@ -73,13 +79,16 @@ async def accept_to_processing(
 ) -> Application:
     if not is_allowed:
         raise AccessDeniedError()
+    
     application = await repo.get_application_by_id(application_id)
     if not application:
         raise ApplicationNotFoundError()
+    
     sm = ApplicationStateMachine(application)
     try:
         updated = await sm.accept_to_processing(assigned_to, actor_id, "psychologist" if is_allowed else "manager")
-        return updated
+        # Перезапрашиваем объект со связями после обновления
+        return await repo.get_application_by_id(updated.id)
     except (InvalidStatusTransitionError, ConflictError, ValidationError) as e:
         raise e
 
@@ -92,6 +101,7 @@ async def offer_consultation(
 ) -> Application:
     if not is_psychologist:
         raise AccessDeniedError()
+    
     application = await repo.get_application_by_id(application_id)
     if not application:
         raise ApplicationNotFoundError()
@@ -108,7 +118,8 @@ async def offer_consultation(
     sm = ApplicationStateMachine(application)
     try:
         updated = await sm.offer_consultation(offer_payload, actor_id, "psychologist")
-        return updated
+        # Перезапрашиваем объект со связями
+        return await repo.get_application_by_id(updated.id)
     except (InvalidStatusTransitionError, ConflictError, ValidationError) as e:
         raise e
 
@@ -129,13 +140,14 @@ async def confirm_application(
     if application.status == ApplicationStatus.COMPLETED.value:
         return application
     
-
     sm = ApplicationStateMachine(application)
     try:
         updated = await sm.confirm(actor_id, "user", appointment_id) 
-        return updated
+        # Перезапрашиваем объект со связями
+        return await repo.get_application_by_id(updated.id)
     except (InvalidStatusTransitionError, ConflictError, ValidationError) as e:
         raise e
+
 
 async def reject_application(
     application_id: UUID,
@@ -145,13 +157,16 @@ async def reject_application(
 ) -> Application:
     if not is_allowed:
         raise AccessDeniedError()
+    
     application = await repo.get_application_by_id(application_id)
     if not application:
         raise ApplicationNotFoundError()
+        
     sm = ApplicationStateMachine(application)
     try:
         updated = await sm.reject(reject_reason, actor_id, "psychologist" if is_allowed else "manager")
-        return updated
+        # Перезапрашиваем объект со связями
+        return await repo.get_application_by_id(updated.id)
     except (InvalidStatusTransitionError, ConflictError, ValidationError) as e:
         raise e
 
@@ -166,13 +181,16 @@ async def cancel_application(
 ) -> Application:
     if not is_allowed:
         raise AccessDeniedError()
+    
     application = await repo.get_application_by_id(application_id)
     if not application:
         raise ApplicationNotFoundError()
+        
     sm = ApplicationStateMachine(application)
     try:
         updated = await sm.cancel(cancel_reason, cancel_initiator, actor_id, actor_type)
-        return updated
+        # Перезапрашиваем объект со связями
+        return await repo.get_application_by_id(updated.id)
     except (InvalidStatusTransitionError, ConflictError, ValidationError) as e:
         raise e
 
@@ -181,9 +199,11 @@ async def expire_application(application_id: UUID) -> Application:
     application = await repo.get_application_by_id(application_id)
     if not application:
         raise ApplicationNotFoundError()
+        
     sm = ApplicationStateMachine(application)
     try:
         updated = await sm.expire(None, "system")
-        return updated
+        # Перезапрашиваем объект со связями
+        return await repo.get_application_by_id(updated.id)
     except (InvalidStatusTransitionError, ConflictError) as e:
         raise e
