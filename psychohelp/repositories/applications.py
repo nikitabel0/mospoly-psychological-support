@@ -1,10 +1,10 @@
 from uuid import UUID
-from sqlalchemy import select, update, and_, or_
-from sqlalchemy.exc import IntegrityError
-from sqlalchemy.orm import selectinload  # Импорт для подгрузки связей
+from sqlalchemy import select, update, and_
+from sqlalchemy.orm import selectinload
 from psychohelp.config.config import get_async_db
 from psychohelp.models.applications import Application, ApplicationStatus
-from psychohelp.models.psychologists import Psychologist  # Обязательно импортируем для вложенной загрузки
+from psychohelp.models.psychologists import Psychologist
+from psychohelp.models.appointments import Appointment
 
 
 async def create_application(application_data: dict) -> Application:
@@ -23,8 +23,9 @@ async def get_application_by_id(application_id: UUID) -> Application | None:
             .options(
                 selectinload(Application.user),
                 selectinload(Application.assigned_to_user),
-                selectinload(Application.appointment),
-                # ВОТ ЗДЕСЬ ИСПРАВЛЕНИЕ: Цепочка подгрузки 2-го уровня
+                # Глубокая подгрузка пациента внутри встречи
+                selectinload(Application.appointment).selectinload(Appointment.patient),
+                # Глубокая подгрузка профиля психолога
                 selectinload(Application.psychologist).selectinload(Psychologist.user)
             )
             .where(Application.id == application_id)
@@ -42,12 +43,12 @@ async def get_applications(
     sort_desc: bool = True,
 ) -> list[Application]:
     async with get_async_db() as session:
-        # ДОБАВЛЯЕМ ЖАДНУЮ ЗАГРУЗКУ И СЮДА
         query = select(Application).options(
             selectinload(Application.user),
             selectinload(Application.assigned_to_user),
-            selectinload(Application.appointment),
-            # Снова цепочка для 2-го уровня
+            # Глубокая подгрузка пациента внутри встречи
+            selectinload(Application.appointment).selectinload(Appointment.patient),
+            # Глубокая подгрузка профиля психолога
             selectinload(Application.psychologist).selectinload(Psychologist.user)
         )
         
@@ -58,8 +59,10 @@ async def get_applications(
             filters.append(Application.assigned_to == assigned_to)
         if user_id:
             filters.append(Application.user_id == user_id)
+            
         if filters:
             query = query.where(and_(*filters))
+            
         if sort_by:
             order = getattr(Application, sort_by).desc() if sort_desc else getattr(Application, sort_by).asc()
             query = query.order_by(order)

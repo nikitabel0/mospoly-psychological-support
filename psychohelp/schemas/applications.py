@@ -39,12 +39,10 @@ class PsychologistFullResponse(BaseModel):
 
 class AppointmentFullResponse(BaseModel):
     id: UUID
-    patient_id: UUID
-    patient_first_name: str
-    patient_last_name: str
+    patient: UserFullResponse 
     application_id: Optional[UUID] = None
     psychologist_id: UUID
-    type: str # Конвертируется из Enum автоматом при использовании use_enum_values
+    type: str 
     reason: Optional[str] = None
     status: str
     cancel_reason: Optional[str] = None
