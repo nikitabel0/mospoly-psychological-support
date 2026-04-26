@@ -3,6 +3,7 @@ from sqlalchemy import select, update, and_, or_
 from sqlalchemy.exc import IntegrityError
 from psychohelp.config.config import get_async_db
 from psychohelp.models.applications import Application, ApplicationStatus
+from sqlalchemy.orm import selectinload
 
 
 async def create_application(application_data: dict) -> Application:
@@ -10,14 +11,27 @@ async def create_application(application_data: dict) -> Application:
         application = Application(**application_data)
         session.add(application)
         await session.commit()
-        await session.refresh(application)
-        return application
+        # Для свежесозданной заявки нам тоже нужно загрузить реляции, чтобы Pydantic не ругался
+        # Используем подгрузку после создания
+        stmt = select(Application).options(
+            selectinload(Application.user)
+        ).where(Application.id == application.id)
+        
+        result = await session.execute(stmt)
+        return result.scalar_one()
 
 
 async def get_application_by_id(application_id: UUID) -> Application | None:
     async with get_async_db() as session:
         result = await session.execute(
-            select(Application).where(Application.id == application_id)
+            select(Application)
+            .options( # <--- ДОБАВЛЯЕМ ОПЦИИ ЗАГРУЗКИ СВЯЗЕЙ
+                selectinload(Application.user),
+                selectinload(Application.assigned_to_user),
+                selectinload(Application.psychologist),
+                selectinload(Application.appointment)
+            )
+            .where(Application.id == application_id)
         )
         return result.scalar_one_or_none()
 
@@ -32,7 +46,13 @@ async def get_applications(
     sort_desc: bool = True,
 ) -> list[Application]:
     async with get_async_db() as session:
-        query = select(Application)
+        query = select(Application).options( # <--- ДОБАВЛЯЕМ ТУТ ТОЖЕ
+            selectinload(Application.user),
+            selectinload(Application.assigned_to_user),
+            selectinload(Application.psychologist),
+            selectinload(Application.appointment)
+        )
+        
         filters = []
         if status:
             filters.append(Application.status == status.value)
@@ -45,6 +65,7 @@ async def get_applications(
         if sort_by:
             order = getattr(Application, sort_by).desc() if sort_desc else getattr(Application, sort_by).asc()
             query = query.order_by(order)
+            
         query = query.offset(skip).limit(limit)
         result = await session.execute(query)
         return list(result.scalars().all())
