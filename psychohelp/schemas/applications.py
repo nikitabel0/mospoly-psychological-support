@@ -4,6 +4,57 @@ from datetime import datetime
 from enum import Enum
 from typing import Optional
 
+class UserFullResponse(BaseModel):
+    id: UUID
+    first_name: str
+    middle_name: Optional[str] = None
+    last_name: str
+    phone_number: str
+    email: EmailStr
+    social_media: Optional[str] = None
+    study_group: Optional[str] = None
+    # Пароль исключен из соображений безопасности
+
+    class Config:
+        from_attributes = True
+
+
+class PsychologistFullResponse(BaseModel):
+    id: UUID
+    user_id: UUID
+    experience: str
+    qualification: str
+    consult_areas: str
+    description: str
+    office: str
+    education: str
+    short_description: str
+    photo: Optional[str] = None
+    # Включаем данные пользователя, связанные с этим психологом
+    user: Optional[UserFullResponse] = None 
+
+    class Config:
+        from_attributes = True
+
+
+class AppointmentFullResponse(BaseModel):
+    id: UUID
+    patient: UserFullResponse 
+    application_id: Optional[UUID] = None
+    psychologist_id: UUID
+    type: str 
+    reason: Optional[str] = None
+    status: str
+    cancel_reason: Optional[str] = None
+    conclusion: Optional[str] = None
+    scheduled_time: datetime
+    remind_time: Optional[datetime] = None
+    last_change_time: datetime
+    venue: str
+    comment: Optional[str] = None
+
+    class Config:
+        from_attributes = True
 
 class UniversityStatus(str, Enum):
     STUDENT = "студент"
@@ -35,24 +86,11 @@ class MeetingType(str, Enum):
 
 
 class ApplicationCreateRequest(BaseModel):
-    first_name: str = Field(..., min_length=1, max_length=50)
-    last_name: str = Field(..., min_length=1, max_length=50)
-    email: Optional[EmailStr] = None
-    phone: Optional[str] = Field(None, min_length=10, max_length=20)
+    psychologist_id: UUID
+    scheduled_at: datetime
     problem_description: str = Field(..., min_length=10, max_length=2000)
     preferred_campus: Optional[str] = Field(None, max_length=128)
     university_status: UniversityStatus
-
-    @field_validator('email', 'phone')
-    def check_contact(cls, v, info):
-        if info.field_name == 'email' and v is None:
-            # если email не передан, проверим phone
-            if info.data.get('phone') is None:
-                raise ValueError('Необходимо указать email или телефон')
-        if info.field_name == 'phone' and v is None:
-            if info.data.get('email') is None:
-                raise ValueError('Необходимо указать email или телефон')
-        return v
 
 
 class AcceptToProcessingRequest(BaseModel):
@@ -84,21 +122,23 @@ class CancelRequest(BaseModel):
 
 class ApplicationResponse(BaseModel):
     id: UUID
-    user_id: Optional[UUID]
-    first_name: str
-    last_name: str
-    email: str
-    phone: str
+    
+    # Вложенные объекты вместо UUID
+    user: Optional[UserFullResponse] = None
+    assigned_to_user: Optional[UserFullResponse] = None
+    psychologist: Optional[PsychologistFullResponse] = None
+    appointment: Optional[AppointmentFullResponse] = None
+
     problem_description: str
     preferred_campus: Optional[str]
     university_status: UniversityStatus
     status: ApplicationStatus
-    assigned_to: Optional[UUID]
-    psychologist_id: Optional[UUID]
+    
     meeting_type: Optional[MeetingType]
     scheduled_at: Optional[datetime]
     location_address: Optional[str]
     meeting_url: Optional[str]
+    
     created_at: datetime
     updated_at: datetime
     processing_started_at: Optional[datetime]
@@ -107,11 +147,11 @@ class ApplicationResponse(BaseModel):
     rejected_at: Optional[datetime]
     cancelled_at: Optional[datetime]
     expired_at: Optional[datetime]
+    
     reject_reason: Optional[str]
     cancel_reason: Optional[str]
     cancel_initiator: Optional[CancelInitiator]
     internal_comment: Optional[str]
-    appointment_id: Optional[UUID]
     version: int
 
     class Config:

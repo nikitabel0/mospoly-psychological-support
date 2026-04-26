@@ -1,5 +1,3 @@
-# psychohelp/services/appointments/appointments.py
-
 from datetime import datetime, timezone
 from uuid import UUID
 
@@ -18,7 +16,8 @@ from psychohelp.repositories.psychologists.psychologists import (
 from psychohelp.repositories.users import get_user_by_id
 from psychohelp.models.appointments import Appointment, AppointmentType, AppointmentStatus
 from psychohelp.services.appointments import exceptions as exc
-from psychohelp.services.applications.applications import confirm_application  # импорт функции подтверждения заявки
+from psychohelp.services.applications.applications import confirm_application
+from psychohelp.repositories.appointments import cancel_appointment_by_id as repo_cancel
 
 
 async def get_appointment_by_id(appointment_id: UUID, user_id: UUID) -> Appointment | None:
@@ -34,13 +33,8 @@ async def create_appointment(
     remind_time: datetime | None = None,
     venue: str | None = None,
     comment: str | None = None,
-    application_id: UUID | None = None,   # новый параметр – ID заявки, которую нужно завершить
+    application_id: UUID | None = None,
 ) -> Appointment:
-    """
-    Создание записи на прием к психологу.
-    Если передан application_id, то после создания записи заявка автоматически переводится в статус completed
-    и связывается с этой записью (атомарно в рамках одной транзакции – требуется общий сеанс БД).
-    """
     now = datetime.now(timezone.utc)
     status = AppointmentStatus.awaiting
 
@@ -59,18 +53,14 @@ async def create_appointment(
     if patient is None:
         raise exc.PatientNotFoundException(patient_id)
 
-    patient_first_name = patient.first_name
-    patient_last_name = patient.last_name
+    # Проверка существования заявки
     if application_id:
         application = await get_application_by_id(application_id)
         if application is None:
             raise exc.ApplicationNotFoundException(application_id)
-        patient_first_name = application.first_name
-        patient_last_name = application.last_name
 
     psychologist = await get_psychologist_by_id(psychologist_id)
     if psychologist is None:
-        # Backward-compatible behavior: some clients send psychologist user_id here.
         psychologist = await get_psychologist_by_user_id(psychologist_id)
     if psychologist is None:
         raise exc.PsychologistNotFoundException(psychologist_id)
@@ -81,38 +71,36 @@ async def create_appointment(
         case AppointmentType.Online:
             if venue is None:
                 raise exc.VenueRequiredException()
-    # Создаём запись в БД
+
     appointment = await repo_create_appointment(
         patient_id=patient_id,
-        patient_first_name=patient_first_name,
-        patient_last_name=patient_last_name,
         psychologist_id=psychologist.id,
-        application_id=application_id,  # <-- Теперь неважно, на каком месте он стоит в репозитории
+        application_id=application_id,
         type=type,
         reason=reason,
         status=status,
         scheduled_time=scheduled_time,
         remind_time=remind_time,
-        last_change_time=now,           # В репозитории этот параметр называется last_change_time
+        last_change_time=now,
         venue=venue,
         comment=comment,
     )
 
-    # Если передан ID заявки – связываем и завершаем заявку
     if application_id:
-        # Здесь мы предполагаем, что confirm_application использует отдельный сеанс БД.
-        # Для полной атомарности нужно передавать общий сеанс (session), но для упрощения пока так.
-        # Важно: confirm_application должен обновить заявку, установив appointment_id и статус completed.
         await confirm_application(
             application_id=application_id,
             appointment_id=appointment.id,
             actor_id=patient_id,
             is_owner=True
         )
-    return appointment
+        
+    # Возвращаем полностью подгруженный объект
+    return await repo_get_appointment_by_id(appointment.id, patient_id)
 
 
 async def cancel_appointment_by_id(appointment_id: UUID) -> Appointment:
+    # Этот метод скорее всего не используется напрямую из контроллеров без user_id
+    # Оставляем как есть, если он где-то нужен внутри системных сервисов
     return await repo_cancel_appointment_by_id(appointment_id)
 
 
@@ -125,25 +113,21 @@ async def get_appointments_by_token(token: str) -> list[Appointment]:
     return await get_appointments_by_user_id(user_id)
 
 
-async def cancel_appointment_by_patient(appointment_id: UUID, patient_id: UUID, cancel_reason: str) -> Appointment:
-    """Отмена записи пациентом"""
-    from psychohelp.repositories.appointments import cancel_appointment_by_id as repo_cancel
-    appointment = await repo_cancel(appointment_id, patient_id, cancel_reason)
+async def cancel_appointment_by_member(appointment_id: UUID, user_id: UUID, cancel_reason: str) -> Appointment:
+    appointment = await repo_cancel(appointment_id, user_id, cancel_reason)
     return appointment
 
 
 async def get_appointment_for_user(appointment_id: UUID, user_id: UUID) -> Appointment | None:
-    """Получить запись для пользователя (проверка прав доступа)"""
     from psychohelp.repositories.appointments import get_appointment_for_user as repo_get
     appointment = await repo_get(appointment_id, user_id)
     return appointment
+
 
 async def complete_appointment(
         appointment_id: UUID,
         psychologist_id: UUID,
         conclusion: str) -> Appointment:
-    """Завершение записи психологом с добавлением заключения"""
     from psychohelp.repositories.appointments import complete_appointment_by_psychologist as repo_complete
-
     appointment = await repo_complete(appointment_id, psychologist_id, conclusion)
     return appointment

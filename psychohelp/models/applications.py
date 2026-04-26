@@ -42,10 +42,6 @@ class Application(Base):
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
     user_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True)
-    first_name = Column(String(50), nullable=False)
-    last_name = Column(String(50), nullable=False)
-    email = Column(String(64), nullable=False)
-    phone = Column(String(20), nullable=False)
     problem_description = Column(Text, nullable=False)
     preferred_campus = Column(String(128), nullable=True)
     university_status = Column(String(50), nullable=False)

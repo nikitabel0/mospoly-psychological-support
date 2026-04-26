@@ -3,44 +3,87 @@ from psychohelp.repositories.appointments import (
     AppointmentStatus,
     UUID,
 )
-
-from pydantic import BaseModel
-
+from pydantic import BaseModel, EmailStr
 from datetime import datetime
+from typing import Optional
 
 
-class AppointmentBase(BaseModel):
+# --- Полные схемы для вложенных объектов ---
+
+class UserFullResponse(BaseModel):
     id: UUID
-    patient_id: UUID
-    patient_first_name: str
-    patient_last_name: str
-    psychologist_id: UUID
-    type: AppointmentType
-    reason: str | None = None
-    status: AppointmentStatus
-    scheduled_time: datetime
-    remind_time: datetime | None = None
-    last_change_time: datetime
-    venue: str
-    comment: str | None = None
+    first_name: str
+    middle_name: Optional[str] = None
+    last_name: str
+    phone_number: str
+    email: EmailStr
+    social_media: Optional[str] = None
+    study_group: Optional[str] = None
+    # Пароль намеренно исключен
 
     class Config:
         from_attributes = True
 
 
+class PsychologistFullResponse(BaseModel):
+    id: UUID
+    user_id: UUID
+    experience: str
+    qualification: str
+    consult_areas: str
+    description: str
+    office: str
+    education: str
+    short_description: str
+    photo: Optional[str] = None
+    # Вложенный профиль пользователя для психолога
+    user: UserFullResponse 
+
+    class Config:
+        from_attributes = True
+
+
+# --- Основные схемы ---
+
+class AppointmentBase(BaseModel):
+    id: UUID
+    
+    # Полные вложенные объекты вместо UUID
+    patient: UserFullResponse
+    psychologist: PsychologistFullResponse
+    
+    application_id: Optional[UUID] = None
+    type: AppointmentType
+    reason: Optional[str] = None
+    status: AppointmentStatus
+    scheduled_time: datetime
+    remind_time: Optional[datetime] = None
+    last_change_time: datetime
+    venue: str
+    comment: Optional[str] = None
+    cancel_reason: Optional[str] = None
+    conclusion: Optional[str] = None
+
+    class Config:
+        from_attributes = True
+        use_enum_values = True
+
+
 class AppointmentCreateRequest(BaseModel):
-    application_id: UUID | None = None
+    application_id: Optional[UUID] = None
     patient_id: UUID
     psychologist_id: UUID
     type: AppointmentType
     scheduled_time: datetime
-    reason: str | None = None
-    remind_time: datetime | None = None
-    venue: str | None = None
-    comment: str | None = None
+    reason: Optional[str] = None
+    remind_time: Optional[datetime] = None
+    venue: Optional[str] = None
+    comment: Optional[str] = None
+
 
 class AppointmentCancelRequest(BaseModel):
     cancel_reason: str
+
 
 class AppointmentDoneRequest(BaseModel):
     conclusion: str

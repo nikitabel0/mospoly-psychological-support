@@ -14,7 +14,7 @@ from psychohelp.config.logging import get_logger
 from psychohelp.services.appointments.appointments import (
     get_appointment_by_id,
     create_appointment as srv_create_appointment,
-    cancel_appointment_by_patient,
+    cancel_appointment_by_member,
     get_appointments_by_user_id,
 )
 from psychohelp.services.appointments import exceptions as exc
@@ -161,7 +161,7 @@ async def cancel_appointment(
 ) -> Response:
     """Отменить запись на прием (для пациента)"""
     try:
-        await cancel_appointment_by_patient(id, current_user.id, request.cancel_reason)
+        await cancel_appointment_by_member(id, current_user.id, request.cancel_reason)
         logger.info(f"Appointment cancelled: {id} by user: {current_user.id}. Reason: {request.cancel_reason}")
         return Response(None, status_code=HTTP_200_OK)
     except ValueError as e:
