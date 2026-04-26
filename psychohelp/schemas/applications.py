@@ -35,24 +35,11 @@ class MeetingType(str, Enum):
 
 
 class ApplicationCreateRequest(BaseModel):
-    first_name: str = Field(..., min_length=1, max_length=50)
-    last_name: str = Field(..., min_length=1, max_length=50)
-    email: Optional[EmailStr] = None
-    phone: Optional[str] = Field(None, min_length=10, max_length=20)
+    psychologist_id: UUID
+    scheduled_at: datetime
     problem_description: str = Field(..., min_length=10, max_length=2000)
     preferred_campus: Optional[str] = Field(None, max_length=128)
     university_status: UniversityStatus
-
-    @field_validator('email', 'phone')
-    def check_contact(cls, v, info):
-        if info.field_name == 'email' and v is None:
-            # если email не передан, проверим phone
-            if info.data.get('phone') is None:
-                raise ValueError('Необходимо указать email или телефон')
-        if info.field_name == 'phone' and v is None:
-            if info.data.get('email') is None:
-                raise ValueError('Необходимо указать email или телефон')
-        return v
 
 
 class AcceptToProcessingRequest(BaseModel):

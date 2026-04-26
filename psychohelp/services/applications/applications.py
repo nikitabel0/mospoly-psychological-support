@@ -20,19 +20,12 @@ from psychohelp.repositories.psychologists.psychologists import (
 )
 
 
-async def create_application(user_id: UUID | None, data: ApplicationCreateRequest) -> Application:
+async def create_application(user_id: UUID, data: ApplicationCreateRequest) -> Application:
     application_dict = data.model_dump()
-    if user_id:
-        user = await get_user_by_id(user_id)
-        if not user:
-            raise HTTPException(status_code=HTTP_404_NOT_FOUND, detail="User not found")
-        application_dict["user_id"] = user_id
-    else:
-        application_dict["user_id"] = None
-    # Для неавторизованных проверяем наличие контакта
-    if not application_dict.get("email") and not application_dict.get("phone"):
-        raise HTTPException(status_code=HTTP_422_UNPROCESSABLE_ENTITY, detail="Необходимо указать email или телефон")
-    return await repo.create_application(application_dict)
+    user = await get_user_by_id(user_id)
+    if not user:
+        raise HTTPException(status_code=HTTP_404_NOT_FOUND, detail="User not found")
+    application_dict["user_id"] = user_id
 
 
 async def get_application_for_user(application_id: UUID, user_id: UUID | None, is_manager_or_psychologist: bool) -> Application:

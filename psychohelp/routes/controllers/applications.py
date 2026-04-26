@@ -76,10 +76,13 @@ async def create_application_endpoint(
     data: ApplicationCreateRequest
 ) -> ApplicationResponse:
     token = request.cookies.get("access_token")
-    user_id = get_user_id_from_token(token) if token else None
-    application = await create_application(user_id, data)
-    logger.info(f"Application created: {application.id}")
-    return ApplicationResponse.from_orm(application)
+    if token:
+        user_id = get_user_id_from_token(token)
+        application = await create_application(user_id, data)
+        logger.info(f"Application created: {application.id}")
+        return ApplicationResponse.from_orm(application)
+    else:
+        raise HTTPException(status_code=HTTP_403_FORBIDDEN, detail="Недостаточно прав")
 
 
 # 2. Получение списка заявок (только для руководителей/психологов, с фильтрацией)

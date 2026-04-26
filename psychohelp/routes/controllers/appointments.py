@@ -180,6 +180,7 @@ async def complete_appointment_endpoint(
      Требует обязательного заключения (conclusion).
      """
     try:
+        print(current_user.id)
         await complete_appointment(id, current_user.id, request.conclusion)
         logger.info(f"Appointment completed: {id} by psychologist: {current_user.id}")
         return Response(None, status_code=HTTP_200_OK)

@@ -3,6 +3,7 @@ from psychohelp.models.appointments import (
     AppointmentType,
     AppointmentStatus,
 )
+from sqlalchemy.orm import selectinload
 
 from psychohelp.models.psychologists import Psychologist
 from psychohelp.models.appointments import Appointment
@@ -122,13 +123,18 @@ async def complete_appointment_by_psychologist(
         psychologist_id: UUID,
         conclusion: str) -> Appointment:
     async with get_async_db() as session:
-        appointment = await session.execute(
-            select(Appointment).filter(Appointment.id == appointment_id))
-        appointment = appointment.scalar_one_or_none()
+        query = select(Appointment).options(
+            selectinload(Appointment.psychologist)
+        ).filter(Appointment.id == appointment_id)
+        
+        result = await session.execute(query)
+        appointment = result.scalar_one_or_none()
 
         if appointment is None:
             raise ValueError("Встреча не найдена")
-        if appointment.psychologist_id != psychologist_id:
+        if appointment is None:
+            raise ValueError("Встреча не найдена")
+        if appointment.psychologist.user_id != psychologist_id:
             raise PermissionError("Только назначенный психолог может завершить прием")
         if appointment.status in (AppointmentStatus.done, AppointmentStatus.cancelled):
             raise ValueError("Нельзя завершить эту встречу (она уже завершена или отменена)")
