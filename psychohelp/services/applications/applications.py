@@ -26,12 +26,8 @@ async def create_application(user_id: UUID, data: ApplicationCreateRequest) -> A
     if not user:
         raise HTTPException(status_code=HTTP_404_NOT_FOUND, detail="User not found")
     application_dict["user_id"] = user_id
-    application_dict["psychologist_id"] = data.psychologist_id
-    application_dict["scheduled_at"] = data.scheduled_at
-    application_dict["problem_description"] = data.problem_description
-    application_dict["preferred_campus"] = data.preferred_campus
-    application_dict["university_status"] = data.university_status
-    
+    return await repo.create_application(application_dict)
+
 async def get_application_for_user(application_id: UUID, user_id: UUID | None, is_manager_or_psychologist: bool) -> Application:
     application = await repo.get_application_by_id(application_id)
     if not application:
