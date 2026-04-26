@@ -17,6 +17,7 @@ from psychohelp.repositories.users import get_user_by_id
 from psychohelp.models.appointments import Appointment, AppointmentType, AppointmentStatus
 from psychohelp.services.appointments import exceptions as exc
 from psychohelp.services.applications.applications import confirm_application
+from psychohelp.repositories.appointments import cancel_appointment_by_id as repo_cancel
 
 
 async def get_appointment_by_id(appointment_id: UUID, user_id: UUID) -> Appointment | None:
@@ -112,9 +113,8 @@ async def get_appointments_by_token(token: str) -> list[Appointment]:
     return await get_appointments_by_user_id(user_id)
 
 
-async def cancel_appointment_by_patient(appointment_id: UUID, patient_id: UUID, cancel_reason: str) -> Appointment:
-    from psychohelp.repositories.appointments import cancel_appointment_by_id as repo_cancel
-    appointment = await repo_cancel(appointment_id, patient_id, cancel_reason)
+async def cancel_appointment_by_member(appointment_id: UUID, user_id: UUID, cancel_reason: str) -> Appointment:
+    appointment = await repo_cancel(appointment_id, user_id, cancel_reason)
     return appointment
 
 

@@ -88,8 +88,8 @@ async def cancel_appointment_by_id(appointment_id: UUID, current_user_id: UUID, 
         if appointment is None:
             raise ValueError("Встреча не найдена")
 
-        if appointment.patient_id != current_user_id:
-            raise ValueError("Только пациент может отменить свою запись")
+        if appointment.patient_id != current_user_id or appointment.psychologist_id != current_user_id:
+            raise ValueError("Только пациент или психолог может отменить свою запись")
 
         if appointment.status == AppointmentStatus.cancelled:
             raise ValueError("Встреча уже отменена")
