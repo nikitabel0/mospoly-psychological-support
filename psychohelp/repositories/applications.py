@@ -1,9 +1,10 @@
 from uuid import UUID
 from sqlalchemy import select, update, and_, or_
 from sqlalchemy.exc import IntegrityError
+from sqlalchemy.orm import selectinload  # Импорт для подгрузки связей
 from psychohelp.config.config import get_async_db
 from psychohelp.models.applications import Application, ApplicationStatus
-from sqlalchemy.orm import selectinload
+from psychohelp.models.psychologists import Psychologist  # Обязательно импортируем для вложенной загрузки
 
 
 async def create_application(application_data: dict) -> Application:
@@ -11,25 +12,20 @@ async def create_application(application_data: dict) -> Application:
         application = Application(**application_data)
         session.add(application)
         await session.commit()
-        # Для свежесозданной заявки нам тоже нужно загрузить реляции, чтобы Pydantic не ругался
-        # Используем подгрузку после создания
-        stmt = select(Application).options(
-            selectinload(Application.user)
-        ).where(Application.id == application.id)
-        
-        result = await session.execute(stmt)
-        return result.scalar_one()
+        await session.refresh(application)
+        return application
 
 
 async def get_application_by_id(application_id: UUID) -> Application | None:
     async with get_async_db() as session:
         result = await session.execute(
             select(Application)
-            .options( # <--- ДОБАВЛЯЕМ ОПЦИИ ЗАГРУЗКИ СВЯЗЕЙ
+            .options(
                 selectinload(Application.user),
                 selectinload(Application.assigned_to_user),
-                selectinload(Application.psychologist),
-                selectinload(Application.appointment)
+                selectinload(Application.appointment),
+                # ВОТ ЗДЕСЬ ИСПРАВЛЕНИЕ: Цепочка подгрузки 2-го уровня
+                selectinload(Application.psychologist).selectinload(Psychologist.user)
             )
             .where(Application.id == application_id)
         )
@@ -46,11 +42,13 @@ async def get_applications(
     sort_desc: bool = True,
 ) -> list[Application]:
     async with get_async_db() as session:
-        query = select(Application).options( # <--- ДОБАВЛЯЕМ ТУТ ТОЖЕ
+        # ДОБАВЛЯЕМ ЖАДНУЮ ЗАГРУЗКУ И СЮДА
+        query = select(Application).options(
             selectinload(Application.user),
             selectinload(Application.assigned_to_user),
-            selectinload(Application.psychologist),
-            selectinload(Application.appointment)
+            selectinload(Application.appointment),
+            # Снова цепочка для 2-го уровня
+            selectinload(Application.psychologist).selectinload(Psychologist.user)
         )
         
         filters = []
