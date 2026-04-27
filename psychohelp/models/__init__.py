@@ -6,3 +6,5 @@ from psychohelp.models import appointments
 from psychohelp.models import reviews
 from psychohelp.models import articles
 from .applications import Application
+from .news import News
+
