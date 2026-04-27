@@ -7,6 +7,7 @@ from .controllers import roles
 from .controllers import images
 from .controllers import applications
 from .controllers import articles
+from .controllers import news
 
 
 api_router = APIRouter()
@@ -18,3 +19,4 @@ api_router.include_router(therapists.router)
 api_router.include_router(images.router)
 api_router.include_router(applications.router)
 api_router.include_router(articles.router)
+api_router.include_router(news.router)
