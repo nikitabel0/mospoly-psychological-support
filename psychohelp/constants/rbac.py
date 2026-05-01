@@ -37,6 +37,11 @@ class PermissionCode(str, Enum):
     MATERIALS_CREATE = "materials.create"
     MATERIALS_EDIT = "materials.edit"
     MATERIALS_DELETE = "materials.delete"
+
+    # Articles permissions
+    ARTICLES_CREATE = "articles.create"
+    ARTICLES_EDIT = "articles.edit"
+    ARTICLES_DELETE = "articles.delete"
     
     # Tests permissions
     TESTS_CREATE = "tests.create"
@@ -49,4 +54,3 @@ class RoleCode(str, Enum):
     PSYCHOLOGIST = "psychologist"
     ADMIN = "admin"
     CONTENT_MANAGER = "content_manager"
-

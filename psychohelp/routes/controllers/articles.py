@@ -1,10 +1,10 @@
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query
-from starlette.status import HTTP_201_CREATED, HTTP_403_FORBIDDEN, HTTP_404_NOT_FOUND
+from starlette.status import HTTP_201_CREATED, HTTP_404_NOT_FOUND
 
 from psychohelp.config.logging import get_logger
-from psychohelp.constants.rbac import RoleCode
+from psychohelp.constants.rbac import PermissionCode
 from psychohelp.dependencies.auth import get_current_user
 from psychohelp.models.users import User
 from psychohelp.schemas.articles import (
@@ -13,22 +13,11 @@ from psychohelp.schemas.articles import (
     ArticleUpdateRequest,
 )
 from psychohelp.services import articles as articles_service
+from psychohelp.services.rbac.permissions import require_permission
 
 
 logger = get_logger(__name__)
 router = APIRouter(prefix="/articles", tags=["articles"])
-
-
-def _ensure_admin(user: User) -> None:
-    role_codes = {
-        getattr(getattr(role, "code", role), "value", getattr(role, "code", role))
-        for role in (user.roles or [])
-    }
-    if RoleCode.ADMIN.value not in role_codes:
-        raise HTTPException(
-            status_code=HTTP_403_FORBIDDEN,
-            detail="Доступ запрещен. Только для администраторов.",
-        )
 
 
 @router.get("/", response_model=list[ArticleResponse])
@@ -49,23 +38,23 @@ async def get_article(article_id: UUID) -> ArticleResponse:
 
 
 @router.post("/", response_model=ArticleResponse, status_code=HTTP_201_CREATED)
+@require_permission(PermissionCode.ARTICLES_CREATE)
 async def create_article(
     data: ArticleCreateRequest,
     current_user: User = Depends(get_current_user),
 ) -> ArticleResponse:
-    _ensure_admin(current_user)
     article = await articles_service.create_article(data.model_dump())
     logger.info(f"Article created: {article.id}")
     return article
 
 
 @router.put("/{article_id}", response_model=ArticleResponse)
+@require_permission(PermissionCode.ARTICLES_EDIT)
 async def update_article(
     article_id: UUID,
     data: ArticleUpdateRequest,
     current_user: User = Depends(get_current_user),
 ) -> ArticleResponse:
-    _ensure_admin(current_user)
     article = await articles_service.update_article(article_id, data.model_dump())
     if article is None:
         raise HTTPException(status_code=HTTP_404_NOT_FOUND, detail="Статья не найдена")
@@ -74,11 +63,11 @@ async def update_article(
 
 
 @router.delete("/{article_id}")
+@require_permission(PermissionCode.ARTICLES_DELETE)
 async def delete_article(
     article_id: UUID,
     current_user: User = Depends(get_current_user),
 ) -> dict[str, str]:
-    _ensure_admin(current_user)
     deleted = await articles_service.delete_article(article_id)
     if not deleted:
         raise HTTPException(status_code=HTTP_404_NOT_FOUND, detail="Статья не найдена")
