@@ -20,11 +20,16 @@ from psychohelp.repositories.rbac.exceptions import (
 )
 from psychohelp.schemas.roles import RoleAssignRequest, RoleRemoveRequest
 
+from psychohelp.constants.rbac import RoleCode
 from psychohelp.repositories import get_user_id_from_token
 from psychohelp.services.users import users
 
 logger = get_logger(__name__)
 router = APIRouter(prefix="/roles", tags=["roles"])
+
+
+def _has_role(user, role_code: RoleCode) -> bool:
+    return any(role.code == role_code for role in (user.roles or []))
 
 
 @router.post("/{user_id}/assign")
@@ -40,7 +45,7 @@ async def assign_role(request: Request, user_id: UUID, role_request: RoleAssignR
         raise HTTPException(status_code=HTTP_401_UNAUTHORIZED, detail="Недействительный токен")
 
     current_user = await users.get_user_by_id(current_user_id)
-    if not current_user or not current_user.roles or "admin" not in current_user.roles:
+    if not current_user or not _has_role(current_user, RoleCode.ADMIN):
         raise HTTPException(status_code=HTTP_403_FORBIDDEN, detail="Только для администраторов")
 
     try:
@@ -68,7 +73,6 @@ async def assign_role(request: Request, user_id: UUID, role_request: RoleAssignR
 async def remove_role(request: Request, user_id: UUID, role_request: RoleRemoveRequest) -> dict[str, str]:
     """Убрать роль у пользователя"""
 
-    # === НАЧАЛО БРОНИРОВАННОЙ ДВЕРИ ===
     token = request.cookies.get("access_token")
     if not token:
         raise HTTPException(status_code=HTTP_401_UNAUTHORIZED, detail="Не авторизован")
@@ -79,9 +83,8 @@ async def remove_role(request: Request, user_id: UUID, role_request: RoleRemoveR
         raise HTTPException(status_code=HTTP_401_UNAUTHORIZED, detail="Недействительный токен")
 
     current_user = await users.get_user_by_id(current_user_id)
-    if not current_user or not current_user.roles or "admin" not in current_user.roles:
+    if not current_user or not _has_role(current_user, RoleCode.ADMIN):
         raise HTTPException(status_code=HTTP_403_FORBIDDEN, detail="Только для администраторов")
-    # === КОНЕЦ БРОНИРОВАННОЙ ДВЕРИ ===
 
     try:
         removed = await remove_role_from_user(user_id, role_request.role_code)
@@ -102,4 +105,3 @@ async def remove_role(request: Request, user_id: UUID, role_request: RoleRemoveR
             status_code=HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Не удалось удалить роль"
         )
-
