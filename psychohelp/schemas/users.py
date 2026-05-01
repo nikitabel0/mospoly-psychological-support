@@ -71,3 +71,12 @@ class PasswordChangeRequest(BaseModel):
     """Схема для смены пароля"""
     old_password: str = Field(..., min_length=8, max_length=64)
     new_password: str = Field(..., min_length=8, max_length=64)
+
+
+class PasswordResetRequest(BaseModel):
+    email: EmailStr
+
+
+class PasswordResetConfirmRequest(BaseModel):
+    token: str = Field(..., min_length=1)
+    new_password: str = Field(..., min_length=8, max_length=64)

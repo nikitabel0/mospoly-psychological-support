@@ -5,6 +5,6 @@ from psychohelp.models import psychologists
 from psychohelp.models import appointments
 from psychohelp.models import reviews
 from psychohelp.models import articles
+from psychohelp.models import password_reset_tokens
 from .applications import Application
 from .news import News
-

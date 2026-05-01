@@ -16,6 +16,8 @@ from psychohelp.services.users import exceptions as users_exceptions
 
 from psychohelp.schemas.users import (
     LoginRequest,
+    PasswordResetConfirmRequest,
+    PasswordResetRequest,
     UserCreateRequest,
     UserResponse,
 )
@@ -24,6 +26,12 @@ from . import set_token_in_cookie, set_refresh_token_in_cookie
 from starlette.status import HTTP_400_BAD_REQUEST, HTTP_409_CONFLICT
 from uuid import UUID
 from psychohelp.schemas.users import UserUpdateRequest, PasswordChangeRequest
+from psychohelp.services.email import EmailDeliveryError
+from psychohelp.services.users.password_reset import (
+    InvalidPasswordResetToken,
+    request_password_reset,
+    reset_password,
+)
 from psychohelp.services.users.users import update_profile, change_password
 from psychohelp.services.users.exceptions import PermissionDenied, UserNotFound
 from psychohelp.repositories import get_user_id_from_token
@@ -131,6 +139,40 @@ async def refresh_token(request: Request, response: Response) -> UserResponse:
         raise HTTPException(
             status_code=HTTP_401_UNAUTHORIZED, detail="Недействительный токен обновления"
         )
+
+
+@router.post("/password-reset/request", status_code=HTTP_200_OK)
+@limiter.limit("5/minute")
+async def request_password_reset_email(
+    request: Request,
+    data: PasswordResetRequest,
+) -> dict[str, str]:
+    try:
+        message = await request_password_reset(data.email)
+    except EmailDeliveryError:
+        raise HTTPException(
+            status_code=HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Не удалось отправить письмо для восстановления пароля",
+        )
+    return {"message": message}
+
+
+@router.post("/password-reset/confirm", status_code=HTTP_200_OK)
+@limiter.limit("10/minute")
+async def confirm_password_reset(
+    request: Request,
+    data: PasswordResetConfirmRequest,
+) -> dict[str, str]:
+    try:
+        await reset_password(data.token, data.new_password)
+    except InvalidPasswordResetToken:
+        raise HTTPException(
+            status_code=HTTP_400_BAD_REQUEST,
+            detail="Недействительная или истекшая ссылка восстановления пароля",
+        )
+    return {"message": "Пароль успешно изменён"}
+
+
 @router.put("/me", response_model=UserResponse)
 async def update_my_profile(
     request: Request,
