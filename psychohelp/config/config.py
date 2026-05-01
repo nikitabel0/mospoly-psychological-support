@@ -31,6 +31,20 @@ class Config:
     RESET_COOKIE_ON_START = os.getenv("RESET_COOKIE_ON_START", "true").lower() == "true"
     LOG_LEVEL = os.getenv("LOG_LEVEL", "DEBUG")
 
+    MAIL_FROM_NAME = os.getenv("MAIL_FROM_NAME", "Психологическая поддержка Мосполитеха")
+    MAIL_REQUEST_TIMEOUT_SECONDS = float(os.getenv("MAIL_REQUEST_TIMEOUT_SECONDS", "10"))
+
+    MAIL_SERVICE_URL = os.getenv("MAIL_SERVICE_URL", "https://mail.liquve.space")
+    MAIL_SERVICE_FROM_USER = os.getenv("MAIL_SERVICE_FROM_USER", "root")
+
+    PASSWORD_RESET_TOKEN_EXPIRE_MINUTES = int(
+        os.getenv("PASSWORD_RESET_TOKEN_EXPIRE_MINUTES", "60")
+    )
+    PASSWORD_RESET_URL_TEMPLATE = os.getenv(
+        "PASSWORD_RESET_URL_TEMPLATE",
+        "http://localhost:3000/reset-password?token={token}",
+    )
+
 config = Config()
 
 @asynccontextmanager

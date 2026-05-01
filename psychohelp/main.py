@@ -14,7 +14,17 @@ from psychohelp.config.config import (
 from psychohelp.config.logging import setup_logging, get_logger
 from psychohelp.routes import api_router
 
-from psychohelp.models import users, psychologists, appointments, reviews, roles, permissions, applications, articles
+from psychohelp.models import (
+    users,
+    psychologists,
+    appointments,
+    reviews,
+    roles,
+    permissions,
+    applications,
+    articles,
+    password_reset_tokens,
+)
 
 import uvicorn
 
