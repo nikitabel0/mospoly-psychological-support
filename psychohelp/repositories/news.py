@@ -10,7 +10,7 @@ async def get_news_list(skip: int = 0, take: int = 100) -> list[News]:
     async with get_async_db() as session:
         result = await session.execute(
             select(News)
-            .order_by(News.date.desc())
+            .order_by(News.event_date.desc())
             .offset(skip)
             .limit(take)
         )
