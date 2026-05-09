@@ -46,6 +46,7 @@ class AppointmentFullResponse(BaseModel):
     reason: Optional[str] = None
     status: str
     cancel_reason: Optional[str] = None
+    patient_comment: Optional[str] = None
     conclusion: Optional[str] = None
     scheduled_time: datetime
     remind_time: Optional[datetime] = None

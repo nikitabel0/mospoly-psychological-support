@@ -15,11 +15,22 @@ from psychohelp.services.appointments.appointments import (
     get_appointment_by_id,
     create_appointment as srv_create_appointment,
     cancel_appointment_by_member,
+    confirm_appointment_reschedule,
     get_appointments_by_user_id,
+    get_appointment_reschedule_requests,
+    reject_appointment_reschedule,
+    request_appointment_reschedule,
 )
 from psychohelp.services.appointments import exceptions as exc
-from psychohelp.schemas.appointments import AppointmentBase, AppointmentCreateRequest, AppointmentCancelRequest, \
-    AppointmentDoneRequest
+from psychohelp.schemas.appointments import (
+    AppointmentBase,
+    AppointmentCreateRequest,
+    AppointmentCancelRequest,
+    AppointmentDoneRequest,
+    AppointmentRescheduleRejectRequest,
+    AppointmentRescheduleRequestCreate,
+    AppointmentRescheduleRequestResponse,
+)
 from psychohelp.services.rbac.permissions import require_permission
 from psychohelp.constants.rbac import PermissionCode
 from psychohelp.dependencies.auth import get_current_user, get_optional_user
@@ -168,7 +179,101 @@ async def cancel_appointment(
         logger.error(f"Appointment cancellation failed: {str(e)}")
         raise HTTPException(status_code=HTTP_400_BAD_REQUEST, detail=str(e))
 
-@router.put("/{id}/done", summary="Завершить прием и написать заключение")
+
+@router.get("/{id}/reschedule-requests", response_model=list[AppointmentRescheduleRequestResponse])
+@require_permission(PermissionCode.APPOINTMENTS_VIEW_OWN)
+async def get_reschedule_requests(
+    id: UUID,
+    current_user: User = Depends(get_current_user),
+) -> list[AppointmentRescheduleRequestResponse]:
+    """Получить запросы переноса по записи"""
+    try:
+        return await get_appointment_reschedule_requests(id, current_user.id)
+    except ValueError as e:
+        raise HTTPException(status_code=HTTP_404_NOT_FOUND, detail=str(e))
+
+
+@router.post("/{id}/reschedule-requests", response_model=AppointmentRescheduleRequestResponse)
+@require_permission(PermissionCode.APPOINTMENTS_RESCHEDULE)
+async def request_reschedule(
+    id: UUID,
+    request: AppointmentRescheduleRequestCreate,
+    current_user: User = Depends(get_current_user),
+) -> AppointmentRescheduleRequestResponse:
+    """Запросить подтверждение переноса записи у пациента"""
+    try:
+        reschedule_request = await request_appointment_reschedule(
+            appointment_id=id,
+            psychologist_user_id=current_user.id,
+            scheduled_time=request.scheduled_time,
+            remind_time=request.remind_time,
+            venue=request.venue,
+            comment=request.comment,
+        )
+        logger.info(f"Appointment reschedule requested: {id} by psychologist: {current_user.id}")
+        return reschedule_request
+    except exc.InvalidScheduledTimeException:
+        raise HTTPException(
+            status_code=HTTP_400_BAD_REQUEST,
+            detail="Время записи не может быть в прошлом",
+        )
+    except exc.InvalidRemindTimeException as e:
+        raise HTTPException(
+            status_code=HTTP_400_BAD_REQUEST,
+            detail=f"Некорректное время напоминания: {e.reason}",
+        )
+    except PermissionError as e:
+        raise HTTPException(status_code=HTTP_403_FORBIDDEN, detail=str(e))
+    except ValueError as e:
+        raise HTTPException(status_code=HTTP_400_BAD_REQUEST, detail=str(e))
+
+
+@router.post(
+    "/reschedule-requests/{request_id}/confirm",
+    response_model=AppointmentRescheduleRequestResponse,
+)
+@require_permission(PermissionCode.APPOINTMENTS_CONFIRM_OWN)
+async def confirm_reschedule(
+    request_id: UUID,
+    current_user: User = Depends(get_current_user),
+) -> AppointmentRescheduleRequestResponse:
+    """Подтвердить перенос записи пациентом"""
+    try:
+        reschedule_request = await confirm_appointment_reschedule(request_id, current_user.id)
+        logger.info(f"Appointment reschedule confirmed: {request_id} by user: {current_user.id}")
+        return reschedule_request
+    except PermissionError as e:
+        raise HTTPException(status_code=HTTP_403_FORBIDDEN, detail=str(e))
+    except ValueError as e:
+        raise HTTPException(status_code=HTTP_400_BAD_REQUEST, detail=str(e))
+
+
+@router.post(
+    "/reschedule-requests/{request_id}/reject",
+    response_model=AppointmentRescheduleRequestResponse,
+)
+@require_permission(PermissionCode.APPOINTMENTS_CONFIRM_OWN)
+async def reject_reschedule(
+    request_id: UUID,
+    request: AppointmentRescheduleRejectRequest,
+    current_user: User = Depends(get_current_user),
+) -> AppointmentRescheduleRequestResponse:
+    """Отклонить перенос записи пациентом без отмены самой записи"""
+    try:
+        reschedule_request = await reject_appointment_reschedule(
+            request_id,
+            current_user.id,
+            request.rejection_comment,
+        )
+        logger.info(f"Appointment reschedule rejected: {request_id} by user: {current_user.id}")
+        return reschedule_request
+    except PermissionError as e:
+        raise HTTPException(status_code=HTTP_403_FORBIDDEN, detail=str(e))
+    except ValueError as e:
+        raise HTTPException(status_code=HTTP_400_BAD_REQUEST, detail=str(e))
+
+
+@router.put("/{id}/done", summary="Завершить прием и сохранить комментарии")
 async def complete_appointment_endpoint(
         id: UUID,
         request: AppointmentDoneRequest,
@@ -177,10 +282,15 @@ async def complete_appointment_endpoint(
     """
      Завершает запись на прием (переводит в статус Done).
      Доступно только психологу, который вел этот прием.
-     Требует обязательного заключения (conclusion).
+     Сохраняет комментарий пациенту и внутренний комментарий психологам.
      """
     try:
-        await complete_appointment(id, current_user.id, request.conclusion)
+        await complete_appointment(
+            id,
+            current_user.id,
+            request.patient_comment,
+            request.psychologist_comment,
+        )
         logger.info(f"Appointment completed: {id} by psychologist: {current_user.id}")
         return Response(None, status_code=HTTP_200_OK)
 

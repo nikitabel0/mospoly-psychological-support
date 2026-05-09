@@ -24,6 +24,7 @@ from psychohelp.models import (
     applications,
     articles,
     password_reset_tokens,
+    appointment_reschedule_requests,
 )
 
 import uvicorn

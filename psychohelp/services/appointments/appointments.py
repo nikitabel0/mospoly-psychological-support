@@ -2,6 +2,7 @@ from datetime import datetime, timezone
 from uuid import UUID
 
 from psychohelp.repositories import get_user_id_from_token
+from psychohelp.repositories import appointment_reschedule_requests as reschedule_repo
 from psychohelp.repositories.appointments import (
     get_appointment_by_id as repo_get_appointment_by_id,
     create_appointment as repo_create_appointment,
@@ -18,6 +19,36 @@ from psychohelp.models.appointments import Appointment, AppointmentType, Appoint
 from psychohelp.services.appointments import exceptions as exc
 from psychohelp.services.applications.applications import confirm_application
 from psychohelp.repositories.appointments import cancel_appointment_by_id as repo_cancel
+
+
+def _as_utc(value: datetime) -> datetime:
+    return value.astimezone(timezone.utc) if value.tzinfo else value.replace(tzinfo=timezone.utc)
+
+
+def _validate_appointment_time(
+    scheduled_time: datetime,
+    remind_time: datetime | None,
+) -> tuple[datetime, datetime | None]:
+    now = datetime.now(timezone.utc)
+    scheduled_time_utc = _as_utc(scheduled_time)
+    if scheduled_time_utc <= now:
+        raise exc.InvalidScheduledTimeException(scheduled_time)
+
+    remind_time_utc = None
+    if remind_time is not None:
+        remind_time_utc = _as_utc(remind_time)
+        if remind_time_utc <= now:
+            raise exc.InvalidRemindTimeException(
+                remind_time,
+                "время напоминания не может быть в прошлом",
+            )
+        if remind_time_utc >= scheduled_time_utc:
+            raise exc.InvalidRemindTimeException(
+                remind_time,
+                "время напоминания должно быть раньше времени встречи",
+            )
+
+    return scheduled_time_utc, remind_time_utc
 
 
 async def get_appointment_by_id(appointment_id: UUID, user_id: UUID) -> Appointment | None:
@@ -38,16 +69,7 @@ async def create_appointment(
     now = datetime.now(timezone.utc)
     status = AppointmentStatus.awaiting
 
-    scheduled_time_utc = scheduled_time.astimezone(timezone.utc) if scheduled_time.tzinfo else scheduled_time.replace(tzinfo=timezone.utc)
-    if scheduled_time_utc <= now:
-        raise exc.InvalidScheduledTimeException(scheduled_time)
-
-    if remind_time is not None:
-        remind_time_utc = remind_time.astimezone(timezone.utc) if remind_time.tzinfo else remind_time.replace(tzinfo=timezone.utc)
-        if remind_time_utc <= now:
-            raise exc.InvalidRemindTimeException(remind_time, "время напоминания не может быть в прошлом")
-        if remind_time_utc >= scheduled_time_utc:
-            raise exc.InvalidRemindTimeException(remind_time, "время напоминания должно быть раньше времени встречи")
+    scheduled_time_utc, remind_time_utc = _validate_appointment_time(scheduled_time, remind_time)
 
     patient = await get_user_by_id(patient_id)
     if patient is None:
@@ -79,8 +101,8 @@ async def create_appointment(
         type=type,
         reason=reason,
         status=status,
-        scheduled_time=scheduled_time,
-        remind_time=remind_time,
+        scheduled_time=scheduled_time_utc,
+        remind_time=remind_time_utc,
         last_change_time=now,
         venue=venue,
         comment=comment,
@@ -127,7 +149,64 @@ async def get_appointment_for_user(appointment_id: UUID, user_id: UUID) -> Appoi
 async def complete_appointment(
         appointment_id: UUID,
         psychologist_id: UUID,
-        conclusion: str) -> Appointment:
+        patient_comment: str,
+        psychologist_comment: str | None = None) -> Appointment:
     from psychohelp.repositories.appointments import complete_appointment_by_psychologist as repo_complete
-    appointment = await repo_complete(appointment_id, psychologist_id, conclusion)
+    appointment = await repo_complete(
+        appointment_id,
+        psychologist_id,
+        patient_comment,
+        psychologist_comment,
+    )
     return appointment
+
+
+async def request_appointment_reschedule(
+    appointment_id: UUID,
+    psychologist_user_id: UUID,
+    scheduled_time: datetime,
+    remind_time: datetime | None = None,
+    venue: str | None = None,
+    comment: str | None = None,
+):
+    scheduled_time_utc, remind_time_utc = _validate_appointment_time(scheduled_time, remind_time)
+    return await reschedule_repo.create_reschedule_request(
+        appointment_id=appointment_id,
+        psychologist_user_id=psychologist_user_id,
+        scheduled_time=scheduled_time_utc,
+        remind_time=remind_time_utc,
+        venue=venue,
+        comment=comment,
+    )
+
+
+async def get_appointment_reschedule_requests(
+    appointment_id: UUID,
+    user_id: UUID,
+):
+    return await reschedule_repo.get_reschedule_requests_by_appointment(
+        appointment_id=appointment_id,
+        user_id=user_id,
+    )
+
+
+async def confirm_appointment_reschedule(
+    request_id: UUID,
+    patient_user_id: UUID,
+):
+    return await reschedule_repo.confirm_reschedule_request(
+        request_id=request_id,
+        patient_user_id=patient_user_id,
+    )
+
+
+async def reject_appointment_reschedule(
+    request_id: UUID,
+    patient_user_id: UUID,
+    rejection_comment: str,
+):
+    return await reschedule_repo.reject_reschedule_request(
+        request_id=request_id,
+        patient_user_id=patient_user_id,
+        rejection_comment=rejection_comment,
+    )
