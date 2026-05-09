@@ -15,6 +15,7 @@ class NewsCreateRequest(BaseModel):
     description: Optional[str] = None
     link: Optional[str] = None
     text: Optional[str] = None
+    event_date: datetime
 
 
 class NewsUpdateRequest(BaseModel):
@@ -25,6 +26,7 @@ class NewsUpdateRequest(BaseModel):
     description: Optional[str] = None
     link: Optional[str] = None
     text: Optional[str] = None
+    event_date: Optional[datetime] = None
 
 
 class NewsResponse(BaseModel):
@@ -33,6 +35,7 @@ class NewsResponse(BaseModel):
     image: Optional[str]
     type: Optional[NewsType]
     date: datetime
+    event_date: datetime
     title: str
     description: Optional[str]
     link: Optional[str]

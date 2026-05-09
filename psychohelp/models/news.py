@@ -26,6 +26,8 @@ class News(Base):
 
     date = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
 
+    event_date = Column(DateTime(timezone=True), nullable=False, comment="Дата мероприятия")
+
     title = Column(String(255), nullable=False)
     description = Column(Text, nullable=True)
     link = Column(String(1024), nullable=True)
