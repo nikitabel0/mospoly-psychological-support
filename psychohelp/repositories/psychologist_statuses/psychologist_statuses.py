@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from uuid import UUID
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
@@ -11,6 +11,9 @@ from psychohelp.repositories.psychologist_statuses.exceptions import (
     PsychologistStatusNotFound
 )
 from psychohelp.repositories.psychologists.exceptions import PsychologistNotFoundException
+
+def _as_utc(value: datetime) -> datetime:
+    return value.astimezone(timezone.utc) if value.tzinfo else value.replace(tzinfo=timezone.utc)
 
 async def set_psychologist_status(psychologist_id: UUID, start_date: datetime, end_date: datetime, status: PsychologistStatusType) -> PsychologistStatus:
     """
@@ -25,6 +28,9 @@ async def set_psychologist_status(psychologist_id: UUID, start_date: datetime, e
     Returns:
         PsychologistStatus: Установленный статус психолога
     """
+    start_date = _as_utc(start_date)
+    end_date = _as_utc(end_date)
+
     if start_date >= end_date:
         raise InvalidStatusPeriodException(psychologist_id)
     
