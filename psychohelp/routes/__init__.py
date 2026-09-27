@@ -1,15 +1,16 @@
 from fastapi import APIRouter
-from .controllers import applications
-from .controllers import articles
-from .controllers import images
-from .controllers import news
+from .controllers import users
 from .controllers import appointments
-from .controllers import psy_tests
-from .controllers import psychologist_statuses
+from .controllers import therapists
 from .controllers import reviews
 from .controllers import roles
-from .controllers import therapists
-from .controllers import users
+from .controllers import images
+from .controllers import applications
+from .controllers import articles
+from .controllers import news
+from .controllers import psy_tests
+from .controllers import psychologist_statuses
+
 
 api_router = APIRouter()
 api_router.include_router(users.router)
