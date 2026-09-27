@@ -104,8 +104,12 @@ class AppointmentRescheduleRequestCreate(BaseModel):
     comment: Optional[str] = Field(None, max_length=512)
 
 
-class AppointmentRescheduleRejectRequest(BaseModel):
+class AppointmentRescheduleCancelRequest(BaseModel):
     rejection_comment: str = Field(..., min_length=1, max_length=512)
+
+
+# Backward-compatible import for integrations using the previous schema name.
+AppointmentRescheduleRejectRequest = AppointmentRescheduleCancelRequest
 
 
 class AppointmentRescheduleRequestResponse(BaseModel):

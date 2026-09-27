@@ -15,6 +15,7 @@ from psychohelp.services.appointments.appointments import (
     get_appointment_by_id,
     create_appointment as srv_create_appointment,
     cancel_appointment_by_member,
+    cancel_appointment_reschedule,
     confirm_appointment_reschedule,
     get_appointments_by_user_id,
     get_appointment_reschedule_requests,
@@ -27,7 +28,7 @@ from psychohelp.schemas.appointments import (
     AppointmentCreateRequest,
     AppointmentCancelRequest,
     AppointmentDoneRequest,
-    AppointmentRescheduleRejectRequest,
+    AppointmentRescheduleCancelRequest,
     AppointmentRescheduleRequestCreate,
     AppointmentRescheduleRequestResponse,
 )
@@ -249,16 +250,45 @@ async def confirm_reschedule(
 
 
 @router.post(
+    "/reschedule-requests/{request_id}/cancel",
+    response_model=AppointmentRescheduleRequestResponse,
+)
+@require_permission(PermissionCode.APPOINTMENTS_CONFIRM_OWN)
+async def cancel_reschedule(
+    request_id: UUID,
+    request: AppointmentRescheduleCancelRequest,
+    current_user: User = Depends(get_current_user),
+) -> AppointmentRescheduleRequestResponse:
+    """Отклонить перенос и отменить запись пациентом"""
+    try:
+        reschedule_request = await cancel_appointment_reschedule(
+            request_id,
+            current_user.id,
+            request.rejection_comment,
+        )
+        logger.info(
+            f"Appointment cancelled after reschedule rejection: {request_id} "
+            f"by user: {current_user.id}"
+        )
+        return reschedule_request
+    except PermissionError as e:
+        raise HTTPException(status_code=HTTP_403_FORBIDDEN, detail=str(e))
+    except ValueError as e:
+        raise HTTPException(status_code=HTTP_400_BAD_REQUEST, detail=str(e))
+
+
+@router.post(
     "/reschedule-requests/{request_id}/reject",
     response_model=AppointmentRescheduleRequestResponse,
+    deprecated=True,
 )
 @require_permission(PermissionCode.APPOINTMENTS_CONFIRM_OWN)
 async def reject_reschedule(
     request_id: UUID,
-    request: AppointmentRescheduleRejectRequest,
+    request: AppointmentRescheduleCancelRequest,
     current_user: User = Depends(get_current_user),
 ) -> AppointmentRescheduleRequestResponse:
-    """Отклонить перенос записи пациентом без отмены самой записи"""
+    """Совместимый alias: отклонить перенос и отменить запись пациентом"""
     try:
         reschedule_request = await reject_appointment_reschedule(
             request_id,

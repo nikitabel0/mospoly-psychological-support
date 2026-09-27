@@ -145,7 +145,7 @@ async def confirm_reschedule_request(
         return reschedule_request
 
 
-async def reject_reschedule_request(
+async def cancel_reschedule_request(
     request_id: UUID,
     patient_user_id: UUID,
     rejection_comment: str,
@@ -171,10 +171,28 @@ async def reject_reschedule_request(
 
         _ensure_appointment_open(appointment)
 
+        now = datetime.now(timezone.utc)
+        appointment.status = AppointmentStatus.cancelled
+        appointment.cancel_reason = rejection_comment
+        appointment.last_change_time = now
+
         reschedule_request.status = AppointmentRescheduleStatus.rejected
         reschedule_request.rejection_comment = rejection_comment
-        reschedule_request.responded_at = datetime.now(timezone.utc)
+        reschedule_request.responded_at = now
 
         await session.commit()
         await session.refresh(reschedule_request)
         return reschedule_request
+
+
+async def reject_reschedule_request(
+    request_id: UUID,
+    patient_user_id: UUID,
+    rejection_comment: str,
+) -> AppointmentRescheduleRequest:
+    """Backward-compatible alias: rejecting a transfer cancels the appointment."""
+    return await cancel_reschedule_request(
+        request_id=request_id,
+        patient_user_id=patient_user_id,
+        rejection_comment=rejection_comment,
+    )
