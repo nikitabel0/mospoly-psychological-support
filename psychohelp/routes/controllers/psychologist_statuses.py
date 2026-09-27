@@ -20,9 +20,10 @@ from psychohelp.schemas.psychologist_statuses import (
 from psychohelp.repositories.psychologist_statuses.exceptions import (
     OverlappingStatusException,
     InvalidStatusPeriodException,
+    PsychologistStatusNotFound
 )
 from psychohelp.repositories.psychologists.exceptions import (
-    PsychologistNotFoundException,
+    PsychologistNotFoundException
 )
 from psychohelp.services.psychologist_statuses import (
     set_status,
@@ -101,12 +102,19 @@ async def delete_psychologist_status(
             )
     
     try:
-        await delete_status(status_id)
+        result = await delete_status(status_id, user_id)
+
+        if not result:
+            raise HTTPException(
+                status_code=HTTP_403_FORBIDDEN,
+                detail="Не удалось удалить статус психолога"
+            )
+        
         return {"message": "Статус психолога успешно удален"}
-    except PsychologistNotFoundException as e:
+    except PsychologistStatusNotFound as e:
         raise HTTPException(
             status_code=HTTP_404_NOT_FOUND,
-            detail=f"Статус психолога с ID {e.psychologist_id} не найден"
+            detail=f"Статус с ID {e.status_id} не найден"
         )
 
 @router.get("/{user_id}/statuses", response_model=list[PsychologistStatusResponse])

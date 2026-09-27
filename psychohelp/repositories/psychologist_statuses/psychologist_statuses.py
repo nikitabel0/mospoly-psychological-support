@@ -8,6 +8,7 @@ from psychohelp.models.psychologist_statuses import PsychologistStatus, Psycholo
 from psychohelp.repositories.psychologist_statuses.exceptions import (
     OverlappingStatusException,
     InvalidStatusPeriodException,
+    PsychologistStatusNotFound
 )
 from psychohelp.repositories.psychologists.exceptions import PsychologistNotFoundException
 
@@ -53,7 +54,7 @@ async def set_psychologist_status(psychologist_id: UUID, start_date: datetime, e
             await session.flush()
             return new_status
 
-async def delete_status_by_id(status_id: UUID) -> bool:
+async def delete_status_by_id(status_id: UUID, pid: UUID) -> bool:
     """
     Удаляет статус психолога по его user_id психолога и ID статуса.
     
@@ -68,11 +69,12 @@ async def delete_status_by_id(status_id: UUID) -> bool:
             result = await session.execute(
                 select(PsychologistStatus)
                 .where(PsychologistStatus.id == status_id)
+                .where(PsychologistStatus.pid == pid)
             )
             status = result.scalar_one_or_none()
 
             if not status:
-                return False
+                raise PsychologistStatusNotFound(status_id)
 
             await session.delete(status)
             await session.commit()

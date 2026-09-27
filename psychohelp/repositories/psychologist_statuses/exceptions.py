@@ -12,3 +12,8 @@ class PsychologistStatusNotFoundException(Exception):
     def __init__(self, psychologist_id):
         self.psychologist_id = psychologist_id
         super().__init__(f"Psychologist with ID {psychologist_id} has no status found")
+
+class PsychologistStatusNotFound(Exception):
+    def __init__(self, status_id):
+        self.status_id = status_id
+        super().__init__(f"Status with ID {status_id} not found")
