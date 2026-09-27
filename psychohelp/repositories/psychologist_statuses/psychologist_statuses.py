@@ -1,6 +1,6 @@
 from datetime import datetime, timezone
 from uuid import UUID
-from sqlalchemy import select
+from sqlalchemy import select, desc
 from sqlalchemy.orm import selectinload
 from psychohelp.config.config import get_async_db
 from psychohelp.models.psychologists import Psychologist
@@ -8,7 +8,8 @@ from psychohelp.models.psychologist_statuses import PsychologistStatus, Psycholo
 from psychohelp.repositories.psychologist_statuses.exceptions import (
     OverlappingStatusException,
     InvalidStatusPeriodException,
-    PsychologistStatusNotFound
+    PsychologistStatusNotFound,
+    UserIsNotPsychologist
 )
 from psychohelp.repositories.psychologists.exceptions import PsychologistNotFoundException
 
@@ -104,3 +105,34 @@ async def get_psychologist_statuses_by_id(psychologist_id: UUID) -> list[Psychol
         )
         statuses = result.scalars().all()
         return list(statuses)
+    
+
+async def get_current_status(psychologist_id: UUID) -> PsychologistStatus | None:
+    """
+    Args:
+        psychologist_id: UUID психолога
+    Returns:
+        PsychologistStatus: текущий статус психолога
+    """
+    now = datetime.now(timezone.utc)
+    async with get_async_db() as session:
+        psychologist_result = await session.execute(
+            select(Psychologist)
+            .where(Psychologist.user_id == psychologist_id)
+        )
+
+        psychologist = psychologist_result.scalar_one_or_none()
+
+        if not psychologist:
+            raise UserIsNotPsychologist(psychologist_id)
+        result = await session.execute(
+            select(PsychologistStatus)
+            .where(
+                PsychologistStatus.pid == psychologist_id,
+                PsychologistStatus.start_date <= now,
+                PsychologistStatus.end_date >= now
+            )
+            .limit(1)
+        )
+
+        return result.scalar_one_or_none()

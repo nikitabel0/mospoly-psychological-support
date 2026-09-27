@@ -17,3 +17,7 @@ class PsychologistStatusResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+class CurrentStatusInfoResponse(BaseModel):
+    status: str
+    details: PsychologistStatusResponse | None = None

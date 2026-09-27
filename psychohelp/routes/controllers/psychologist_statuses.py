@@ -16,11 +16,13 @@ from psychohelp.constants.rbac import PermissionCode
 from psychohelp.schemas.psychologist_statuses import (
     PsychologistStatusResponse,
     PsychologistStatusCreateRequest,
+    CurrentStatusInfoResponse
 )
 from psychohelp.repositories.psychologist_statuses.exceptions import (
     OverlappingStatusException,
     InvalidStatusPeriodException,
-    PsychologistStatusNotFound
+    PsychologistStatusNotFound,
+    UserIsNotPsychologist
 )
 from psychohelp.repositories.psychologists.exceptions import (
     PsychologistNotFoundException
@@ -29,6 +31,7 @@ from psychohelp.services.psychologist_statuses import (
     set_status,
     delete_status,
     get_psychologist_statuses_service,
+    get_current_status_service
 )
 
 logger = logging.getLogger(__name__)
@@ -141,4 +144,19 @@ async def get_psychologist_statuses(
         raise HTTPException(
             status_code=HTTP_404_NOT_FOUND,
             detail=f"Психолог с ID {e.psychologist_id} не найден"
+        )
+
+@router.get("/{user_id}/statuses/current", response_model=CurrentStatusInfoResponse)
+async def get_psychologist_current_status(
+    user_id: UUID
+):
+    """Получает текущий статус психолога по ID психолога"""
+    try:
+        status = await get_current_status_service(user_id)
+        return status
+    
+    except UserIsNotPsychologist as e:
+        raise HTTPException(
+            status_code=HTTP_403_FORBIDDEN,
+            detail=f"Пользователь с ID {e.user_id} не является психологом"
         )
