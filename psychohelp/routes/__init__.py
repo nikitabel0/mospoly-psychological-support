@@ -8,6 +8,7 @@ from .controllers import images
 from .controllers import applications
 from .controllers import articles
 from .controllers import news
+from .controllers import psy_tests
 from .controllers import psychologist_statuses
 
 api_router = APIRouter()
