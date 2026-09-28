@@ -174,6 +174,90 @@ components:
           type: string
           format: uuid
 
+    AppointmentRescheduleRequestCreate:
+      type: object
+      required:
+        - scheduled_time
+      properties:
+        scheduled_time:
+          type: string
+          format: date-time
+        remind_time:
+          type: string
+          format: date-time
+          nullable: true
+        venue:
+          type: string
+          minLength: 1
+          maxLength: 128
+          nullable: true
+        comment:
+          type: string
+          maxLength: 512
+          nullable: true
+
+    AppointmentRescheduleCancelRequest:
+      type: object
+      required:
+        - rejection_comment
+      properties:
+        rejection_comment:
+          type: string
+          minLength: 1
+          maxLength: 512
+
+    AppointmentRescheduleRequestResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        appointment_id:
+          type: string
+          format: uuid
+        requested_by_user_id:
+          type: string
+          format: uuid
+          nullable: true
+        status:
+          type: string
+          enum: [pending, confirmed, rejected]
+        old_scheduled_time:
+          type: string
+          format: date-time
+        old_remind_time:
+          type: string
+          format: date-time
+          nullable: true
+        old_venue:
+          type: string
+        old_comment:
+          type: string
+          nullable: true
+        requested_scheduled_time:
+          type: string
+          format: date-time
+        requested_remind_time:
+          type: string
+          format: date-time
+          nullable: true
+        requested_venue:
+          type: string
+          nullable: true
+        requested_comment:
+          type: string
+          nullable: true
+        rejection_comment:
+          type: string
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+        responded_at:
+          type: string
+          format: date-time
+          nullable: true
+
     ReviewsBase:
       type: object
       properties:
@@ -342,6 +426,180 @@ paths:
                 $ref: '#/components/schemas/AppointmentCreateResponse'
         '400':
           description: Ошибка валидации
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /appointments/{id}/reschedule-requests:
+    get:
+      tags:
+        - appointments
+      summary: Получить историю запросов переноса записи
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Запросы переноса записи
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/AppointmentRescheduleRequestResponse'
+        '404':
+          description: Запись не найдена или недоступна пользователю
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    post:
+      tags:
+        - appointments
+      summary: Предложить студенту перенос записи
+      description: Исходная запись не изменяется до подтверждения студентом.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AppointmentRescheduleRequestCreate'
+      responses:
+        '200':
+          description: Запрос переноса создан
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AppointmentRescheduleRequestResponse'
+        '400':
+          description: Некорректное время, запись закрыта или уже имеет активный запрос
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Запрос создан не назначенным психологом
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /appointments/reschedule-requests/{request_id}/confirm:
+    post:
+      tags:
+        - appointments
+      summary: Подтвердить перенос записи студентом
+      parameters:
+        - name: request_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Новые условия применены к записи
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AppointmentRescheduleRequestResponse'
+        '400':
+          description: Запрос уже обработан или запись закрыта
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Решение принимает не студент этой записи
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /appointments/reschedule-requests/{request_id}/cancel:
+    post:
+      tags:
+        - appointments
+      summary: Отклонить перенос и отменить запись студентом
+      parameters:
+        - name: request_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AppointmentRescheduleCancelRequest'
+      responses:
+        '200':
+          description: Запрос отклонён, запись отменена, причина сохранена
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AppointmentRescheduleRequestResponse'
+        '400':
+          description: Запрос уже обработан или запись закрыта
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Решение принимает не студент этой записи
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /appointments/reschedule-requests/{request_id}/reject:
+    post:
+      deprecated: true
+      tags:
+        - appointments
+      summary: Совместимый alias отмены после отклонения переноса
+      parameters:
+        - name: request_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AppointmentRescheduleCancelRequest'
+      responses:
+        '200':
+          description: Запрос отклонён, запись отменена, причина сохранена
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AppointmentRescheduleRequestResponse'
+        '400':
+          description: Запрос уже обработан или запись закрыта
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Решение принимает не студент этой записи
           content:
             application/json:
               schema:

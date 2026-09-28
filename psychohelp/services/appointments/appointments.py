@@ -218,7 +218,19 @@ async def reject_appointment_reschedule(
     patient_user_id: UUID,
     rejection_comment: str,
 ):
-    return await reschedule_repo.reject_reschedule_request(
+    return await cancel_appointment_reschedule(
+        request_id=request_id,
+        patient_user_id=patient_user_id,
+        rejection_comment=rejection_comment,
+    )
+
+
+async def cancel_appointment_reschedule(
+    request_id: UUID,
+    patient_user_id: UUID,
+    rejection_comment: str,
+):
+    return await reschedule_repo.cancel_reschedule_request(
         request_id=request_id,
         patient_user_id=patient_user_id,
         rejection_comment=rejection_comment,
