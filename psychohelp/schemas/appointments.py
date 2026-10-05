@@ -5,6 +5,7 @@ from psychohelp.repositories.appointments import (
 )
 from psychohelp.models.appointment_reschedule_requests import AppointmentRescheduleStatus
 from pydantic import BaseModel, EmailStr, Field, model_validator
+from pydantic import AliasChoices, BaseModel, ConfigDict, EmailStr, Field, field_validator
 from datetime import datetime
 from typing import Optional
 
@@ -65,6 +66,7 @@ class AppointmentBase(BaseModel):
     cancel_reason: Optional[str] = None
     patient_comment: Optional[str] = None
     conclusion: Optional[str] = None
+    emergency_contact: Optional[str] = None
 
     class Config:
         from_attributes = True
@@ -81,6 +83,19 @@ class AppointmentCreateRequest(BaseModel):
     remind_time: Optional[datetime] = None
     venue: Optional[str] = None
     comment: Optional[str] = None
+
+
+class AppointmentEmergencyContactRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    emergency_contact: str | None = Field(..., max_length=512, strict=True)
+
+    @field_validator("emergency_contact", mode="before")
+    @classmethod
+    def normalize_emergency_contact(cls, value):
+        if isinstance(value, str):
+            return value.strip() or None
+        return value
 
 
 class AppointmentCancelRequest(BaseModel):

@@ -9,10 +9,13 @@ from starlette.status import (
     HTTP_422_UNPROCESSABLE_ENTITY, HTTP_403_FORBIDDEN,
     HTTP_500_INTERNAL_SERVER_ERROR,
 )
-from pydantic import EmailStr
+from pydantic import EmailStr, BaseModel
+
+from typing import Optional
 
 from psychohelp.config.logging import get_logger
 from psychohelp.services.users import users
+from psychohelp.models.users import User
 from psychohelp.services.users import exceptions as users_exceptions
 
 from psychohelp.schemas.users import (
@@ -200,6 +203,20 @@ async def update_my_profile(
         )
 
     return UserResponse.model_validate(updated_user)
+
+class UserStatusResponse(BaseModel):
+    status: Optional[str] = None
+
+@router.get("/me/status", response_model=UserStatusResponse, summary="Получить статус обучающегося")
+async def get_my_status(
+    request: Request,
+    current_user: User = Depends(get_current_user)
+) -> UserStatusResponse:
+    user_status = getattr(current_user, "group_status", None)
+    if hasattr(user_status, "value"):
+        user_status = user_status.value
+
+    return UserStatusResponse.model_validate(user_status)
 
 
 @router.put("/{user_id}", response_model=UserResponse)
