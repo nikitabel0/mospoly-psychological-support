@@ -99,10 +99,7 @@ async def login(request: Request, data: LoginRequest, response: Response) -> Use
 
 
 @router.post("/logout")
-async def logout(
-    response: Response,
-    current_user: User = Depends(get_current_user),
-) -> Response:
+async def logout(response: Response) -> Response:
     response.status_code = HTTP_200_OK
     response.delete_cookie("access_token", secure=False, samesite="Lax")
     response.delete_cookie("refresh_token", secure=False, samesite="Lax")

@@ -27,7 +27,6 @@ FUTURE_TIME = "2030-01-01T10:00:00Z"
 
 PROTECTED_ENDPOINTS = [
     ("GET", "/users/user", None),
-    ("POST", "/users/logout", None),
     ("PUT", "/users/me", {}),
     ("PUT", f"/users/{RESOURCE_ID}", {}),
     (
@@ -238,6 +237,30 @@ async def test_refresh_returns_401_for_invalid_token(token):
         response = await client.post("/users/refresh")
 
     assert response.status_code == 401
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("access_token", [None, "invalid-token", _expired_token()])
+async def test_logout_clears_cookies_regardless_of_access_token(access_token):
+    transport = httpx.ASGITransport(app=app, raise_app_exceptions=False)
+    async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
+        if access_token is not None:
+            client.cookies.set("access_token", access_token)
+        client.cookies.set("refresh_token", "valid-refresh-token")
+        response = await client.post("/users/logout")
+
+    set_cookie_headers = response.headers.get_list("set-cookie")
+
+    access_cookie = next(
+        header for header in set_cookie_headers if header.startswith("access_token=")
+    )
+    refresh_cookie = next(
+        header for header in set_cookie_headers if header.startswith("refresh_token=")
+    )
+
+    assert response.status_code == 200
+    assert "max-age=0" in access_cookie.lower()
+    assert "max-age=0" in refresh_cookie.lower()
 
 
 @pytest.mark.asyncio
