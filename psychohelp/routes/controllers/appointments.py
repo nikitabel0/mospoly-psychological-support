@@ -1,6 +1,7 @@
 from fastapi import HTTPException, APIRouter, Response, Request, Depends
 from starlette.status import (
     HTTP_200_OK,
+    HTTP_201_CREATED,
     HTTP_400_BAD_REQUEST,
     HTTP_401_UNAUTHORIZED,
     HTTP_403_FORBIDDEN,
@@ -73,7 +74,7 @@ async def get_appointments(
     return await get_appointments_by_user_id(user_id)
 
 
-@router.post("/create", response_model=AppointmentBase)
+@router.post("/create", response_model=AppointmentBase, status_code=HTTP_201_CREATED)
 @require_permission(PermissionCode.APPOINTMENTS_CREATE_OWN)
 async def create_appointment(
     appointment: AppointmentCreateRequest,
@@ -201,7 +202,11 @@ async def get_reschedule_requests(
         raise HTTPException(status_code=HTTP_404_NOT_FOUND, detail=str(e))
 
 
-@router.post("/{id}/reschedule-requests", response_model=AppointmentRescheduleRequestResponse)
+@router.post(
+    "/{id}/reschedule-requests",
+    response_model=AppointmentRescheduleRequestResponse,
+    status_code=HTTP_201_CREATED,
+)
 @require_permission(PermissionCode.APPOINTMENTS_RESCHEDULE)
 async def request_reschedule(
     id: UUID,

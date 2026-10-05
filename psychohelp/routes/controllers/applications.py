@@ -33,7 +33,6 @@ from psychohelp.schemas.applications import (
 )
 from psychohelp.services.rbac.permissions import require_permission
 from psychohelp.constants.rbac import PermissionCode
-from psychohelp.repositories import get_user_id_from_token
 from psychohelp.dependencies.auth import get_current_user
 from psychohelp.models.users import User
 from psychohelp.repositories.users import get_user_by_id
@@ -69,20 +68,15 @@ async def _is_psychologist(user_id: UUID) -> bool:
 
 
 
-# 1. Создание заявки (открыто для всех)
+# 1. Создание заявки
 @router.post("/", response_model=ApplicationResponse, status_code=HTTP_201_CREATED)
 async def create_application_endpoint(
-    request: Request,
-    data: ApplicationCreateRequest
+    data: ApplicationCreateRequest,
+    current_user: User = Depends(get_current_user),
 ) -> ApplicationResponse:
-    token = request.cookies.get("access_token")
-    if token:
-        user_id = get_user_id_from_token(token)
-        application = await create_application(user_id, data)
-        logger.info(f"Application created: {application.id}")
-        return ApplicationResponse.from_orm(application)
-    else:
-        raise HTTPException(status_code=HTTP_403_FORBIDDEN, detail="Недостаточно прав")
+    application = await create_application(current_user.id, data)
+    logger.info(f"Application created: {application.id}")
+    return ApplicationResponse.from_orm(application)
 
 
 # 2. Получение списка заявок (только для руководителей/психологов, с фильтрацией)

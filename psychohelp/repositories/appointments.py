@@ -129,7 +129,7 @@ async def get_appointments_by_user_id(user_id: UUID) -> list[Appointment]:
 async def complete_appointment_by_psychologist(
         appointment_id: UUID,
         psychologist_id: UUID,
-        patient_comment: str,
+        patient_comment: str | None = None,
         psychologist_comment: str | None = None) -> Appointment:
     async with get_async_db() as session:
         # Добавили selectinload для всех нужных связей
