@@ -90,5 +90,50 @@ def test_appointment_done_request_accepts_legacy_conclusion_alias():
     assert request.psychologist_comment == "Внутренняя заметка"
 
 
+@pytest.mark.parametrize(
+    ("payload", "patient_comment", "psychologist_comment"),
+    [
+        ({}, None, None),
+        ({"patient_comment": None, "psychologist_comment": None}, None, None),
+        ({"patient_comment": "Комментарий пациенту"}, "Комментарий пациенту", None),
+        ({"psychologist_comment": "Внутренняя заметка"}, None, "Внутренняя заметка"),
+    ],
+)
+def test_appointment_done_request_allows_optional_comments(
+    payload,
+    patient_comment,
+    psychologist_comment,
+):
+    request = AppointmentDoneRequest.model_validate(payload)
+
+    assert request.patient_comment == patient_comment
+    assert request.psychologist_comment == psychologist_comment
+
+
+@pytest.mark.asyncio
+async def test_complete_appointment_allows_empty_comments(monkeypatch):
+    psychologist_user_id = uuid4()
+    appointment = SimpleNamespace(
+        id=uuid4(),
+        psychologist=SimpleNamespace(user_id=psychologist_user_id),
+        status=AppointmentStatus.awaiting,
+        conclusion="Старый комментарий",
+        psychologist_comment="Старая заметка",
+        last_change_time=None,
+    )
+    session = FakeSession(appointment)
+    monkeypatch.setattr(appointments_repo, "get_async_db", lambda: FakeDb(session))
+
+    await appointments_repo.complete_appointment_by_psychologist(
+        appointment.id,
+        psychologist_user_id,
+    )
+
+    assert session.committed is True
+    assert appointment.status == AppointmentStatus.done
+    assert appointment.conclusion is None
+    assert appointment.psychologist_comment is None
+
+
 def test_internal_psychologist_comment_is_not_in_shared_appointment_response():
     assert "psychologist_comment" not in AppointmentBase.model_fields

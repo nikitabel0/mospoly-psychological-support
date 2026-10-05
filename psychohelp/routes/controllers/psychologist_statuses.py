@@ -3,6 +3,7 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException
 from starlette.status import (
+    HTTP_201_CREATED,
     HTTP_400_BAD_REQUEST,
     HTTP_403_FORBIDDEN,
     HTTP_404_NOT_FOUND,
@@ -40,7 +41,11 @@ router = APIRouter(
     tags=["therapists Statuses"],
 )
 
-@router.post("/{user_id}/statuses", response_model=PsychologistStatusResponse)
+@router.post(
+    "/{user_id}/statuses",
+    response_model=PsychologistStatusResponse,
+    status_code=HTTP_201_CREATED,
+)
 async def set_psychologist_status(
     user_id: UUID,
     status_request: PsychologistStatusCreateRequest,

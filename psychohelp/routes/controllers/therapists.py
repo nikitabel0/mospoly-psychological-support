@@ -104,7 +104,10 @@ async def create_psychologist_endpoint(
 
 @router.delete("/{psychologist_id}")
 @require_permission(PermissionCode.PSYCHOLOGISTS_MANAGE)
-async def delete_psychologist_endpoint(request: Request, psychologist_id: UUID) -> dict[str, str]:
+async def delete_psychologist_endpoint(
+    psychologist_id: UUID,
+    current_user: User = Depends(get_current_user),
+) -> dict[str, str]:
     deleted = await delete_psychologist(psychologist_id)
     if not deleted:
         logger.warning(f"Psychologist not found for deletion: {psychologist_id}")

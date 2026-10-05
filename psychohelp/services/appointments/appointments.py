@@ -161,7 +161,7 @@ async def get_appointment_for_user(appointment_id: UUID, user_id: UUID) -> Appoi
 async def complete_appointment(
         appointment_id: UUID,
         psychologist_id: UUID,
-        patient_comment: str,
+        patient_comment: str | None = None,
         psychologist_comment: str | None = None) -> Appointment:
     from psychohelp.repositories.appointments import complete_appointment_by_psychologist as repo_complete
     appointment = await repo_complete(

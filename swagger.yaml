@@ -522,7 +522,7 @@ paths:
             schema:
               $ref: '#/components/schemas/AppointmentCreateRequest'
       responses:
-        '200': 
+        '201':
           description: Запись успешно создана
           content:
             application/json:
@@ -581,7 +581,7 @@ paths:
             schema:
               $ref: '#/components/schemas/AppointmentRescheduleRequestCreate'
       responses:
-        '200':
+        '201':
           description: Запрос переноса создан
           content:
             application/json:
