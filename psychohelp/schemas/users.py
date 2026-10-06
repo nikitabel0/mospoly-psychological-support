@@ -1,4 +1,4 @@
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, EmailStr, Field, field_validator
 from pydantic_extra_types.phone_numbers import PhoneNumber
 from typing import Optional
 from psychohelp.schemas.roles import RoleResponse 
@@ -65,6 +65,15 @@ class UserUpdateRequest(BaseModel):
     email: Optional[EmailStr] = None
     social_media: Optional[str] = Field(None, max_length=50)
     study_group: Optional[str] = Field(None, max_length=50)
+
+    # Обязательные поля можно не передавать, но нельзя очистить через null.
+    # Остальные (middle_name, social_media, study_group) очищаются явным null.
+    @field_validator("first_name", "last_name", "phone_number", "email")
+    @classmethod
+    def forbid_null(cls, value):
+        if value is None:
+            raise ValueError("Поле не может быть null")
+        return value
 
 
 class PasswordChangeRequest(BaseModel):

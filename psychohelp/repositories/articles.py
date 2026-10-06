@@ -35,6 +35,9 @@ async def create_article(article_data: dict) -> Article:
 
 
 async def update_article(article_id: UUID, article_data: dict) -> Article | None:
+    if not article_data:
+        return await get_article_by_id(article_id)
+
     async with get_async_db() as session:
         stmt = (
             update(Article)
