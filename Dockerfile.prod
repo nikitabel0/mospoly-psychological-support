@@ -41,6 +41,12 @@ EXPOSE 8000
 
 # Запускаем uvicorn напрямую, минуя psychohelp.main:main() - там reload=True,
 # который в проде не нужен.
+# --root-path /api: nginx срезает префикс перед проксированием, поэтому
+# приложение видит пути уже без него и ссылки генерирует тоже без него.
+# Из-за этого Swagger UI просил /openapi.json, попадал в SPA и получал HTML
+# вместо схемы. С root-path FastAPI сам проставляет префикс в ссылках
+# и в поле servers, а на сопоставление маршрутов это не влияет.
 CMD ["uvicorn", "psychohelp.main:app", \
      "--host", "0.0.0.0", "--port", "8000", \
-     "--proxy-headers", "--forwarded-allow-ips", "*"]
+     "--proxy-headers", "--forwarded-allow-ips", "*", \
+     "--root-path", "/api"]
