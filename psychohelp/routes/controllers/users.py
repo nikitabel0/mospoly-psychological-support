@@ -1,17 +1,22 @@
-from fastapi import HTTPException, APIRouter, Request, Response
+from fastapi import HTTPException, APIRouter, Depends, Request, Response
+from jwt.exceptions import PyJWTError
 
 from starlette.status import (
     HTTP_200_OK,
     HTTP_201_CREATED,
     HTTP_401_UNAUTHORIZED,
     HTTP_404_NOT_FOUND,
-    HTTP_422_UNPROCESSABLE_ENTITY, HTTP_403_FORBIDDEN,
+    HTTP_422_UNPROCESSABLE_ENTITY, 
+    HTTP_403_FORBIDDEN,
     HTTP_500_INTERNAL_SERVER_ERROR,
 )
-from pydantic import EmailStr
+from pydantic import EmailStr, BaseModel
+
+from typing import Optional
 
 from psychohelp.config.logging import get_logger
 from psychohelp.services.users import users
+from psychohelp.models.users import User
 from psychohelp.services.users import exceptions as users_exceptions
 
 from psychohelp.schemas.users import (
@@ -34,22 +39,21 @@ from psychohelp.services.users.password_reset import (
 )
 from psychohelp.services.users.users import update_profile, change_password
 from psychohelp.services.users.exceptions import PermissionDenied, UserNotFound
-from psychohelp.repositories import get_user_id_from_token
+from psychohelp.constants.rbac import RoleCode
+from psychohelp.dependencies.auth import get_current_user
 
 logger = get_logger(__name__)
 from slowapi import Limiter
 from slowapi.util import get_remote_address
-
-from fastapi import Depends
-from psychohelp.models.users import User
-from psychohelp.dependencies.auth import get_current_user
 
 limiter = Limiter(key_func=get_remote_address)
 router = APIRouter(prefix="/users", tags=["users"])
 
 
 @router.get("/user", response_model=UserResponse)
-async def user_token(current_user: User = Depends(get_current_user)) -> UserResponse:
+async def user_token(
+    current_user: User = Depends(get_current_user),
+) -> UserResponse:
     return current_user
 
 
@@ -72,7 +76,6 @@ async def register_users(user_data: UserCreateRequest, response: Response) -> Us
         set_refresh_token_in_cookie(response, refresh_token)
         response.status_code = HTTP_201_CREATED
     except ValueError as exc:
-        # todo: нельзя так исключение наружу отдавать
         raise HTTPException(status_code=HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc))
 
     return user
@@ -93,22 +96,17 @@ async def login(request: Request, data: LoginRequest, response: Response) -> Use
         return user
     except (users_exceptions.UserNotFound, users_exceptions.WrongPassword):
         raise HTTPException(
-            status_code=HTTP_403_FORBIDDEN, detail="Неверные данные"
+            status_code=HTTP_401_UNAUTHORIZED, detail="Неверные данные"
     )
 
 
 @router.post("/logout")
-async def logout(request: Request, response: Response) -> Response:
-    token = request.cookies.get("access_token")
-    if token is None:
-        raise HTTPException(
-            status_code=HTTP_401_UNAUTHORIZED, detail="Пользователь не авторизован"
-        )
-
+async def logout(response: Response) -> Response:
     response.status_code = HTTP_200_OK
     response.delete_cookie("access_token", secure=False, samesite="Lax")
     response.delete_cookie("refresh_token", secure=False, samesite="Lax")
     return response
+
 
 @router.post("/refresh", response_model=UserResponse)
 async def refresh_token(request: Request, response: Response) -> UserResponse:
@@ -122,12 +120,13 @@ async def refresh_token(request: Request, response: Response) -> UserResponse:
         user = await users.get_user_by_token(new_access_token)
         if user is None:
             raise HTTPException(
-                status_code=HTTP_404_NOT_FOUND, detail="Пользователь не найден"
+                status_code=HTTP_401_UNAUTHORIZED,
+                detail="Недействительный токен обновления",
             )
         set_token_in_cookie(response, new_access_token)
         response.status_code = HTTP_200_OK
         return user
-    except users_exceptions.InvalidToken:
+    except (users_exceptions.InvalidToken, PyJWTError, KeyError, ValueError):
         raise HTTPException(
             status_code=HTTP_401_UNAUTHORIZED, detail="Недействительный токен обновления"
         )
@@ -168,15 +167,13 @@ async def confirm_password_reset(
 @router.put("/me", response_model=UserResponse)
 async def update_my_profile(
     data: UserUpdateRequest,
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ) -> UserResponse:
     """Обновление своего профиля (требуется авторизация)"""
-    user_id = current_user.id
-
     try:
         updated_user = await update_profile(
-            current_user_id=user_id,
-            target_user_id=user_id,
+            current_user_id=current_user.id,
+            target_user_id=current_user.id,
             data=data,
             is_admin=False
         )
@@ -208,20 +205,32 @@ async def update_my_profile(
     return UserResponse.model_validate(updated_user)
 
 
+class UserStatusResponse(BaseModel):
+    status: Optional[str] = None
+
+
+@router.get("/me/status", response_model=UserStatusResponse, summary="Получить статус обучающегося")
+async def get_my_status(
+    request: Request,
+    current_user: User = Depends(get_current_user)
+) -> UserStatusResponse:
+    user_status = getattr(current_user, "group_status", None)
+    if hasattr(user_status, "value"):
+        user_status = user_status.value
+
+    return UserStatusResponse.model_validate(user_status)
+
+
 @router.put("/{user_id}", response_model=UserResponse)
 async def update_user_by_id(
     user_id: UUID,
     data: UserUpdateRequest,
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ) -> UserResponse:
     """Обновление профиля любого пользователя (только для администраторов)"""
-
-    # 1. ПРОВЕРКА РОЛЕЙ: Ищем "admin" в списке ролей пользователя
-    is_admin = False
-    if current_user.roles and "admin" in current_user.roles:
-        is_admin = True
-
-    # Если он не админ, бьем по рукам!
+    is_admin = any(
+        role.code == RoleCode.ADMIN for role in (current_user.roles or [])
+    )
     if not is_admin:
         raise HTTPException(
             status_code=HTTP_403_FORBIDDEN,
@@ -233,7 +242,7 @@ async def update_user_by_id(
             current_user_id=current_user.id,
             target_user_id=user_id,
             data=data,
-            is_admin=True  # предполагаем, что админ
+            is_admin=True
         )
     except UserNotFound:
         raise HTTPException(
@@ -263,10 +272,8 @@ async def change_my_password(
     current_user: User = Depends(get_current_user),
 ) -> dict:
     """Смена пароля текущего пользователя"""
-    user_id = current_user.id
-
     try:
-        await change_password(user_id, data.old_password, data.new_password)
+        await change_password(current_user.id, data.old_password, data.new_password)
     except UserNotFound:
         raise HTTPException(
             status_code=HTTP_404_NOT_FOUND,

@@ -1,10 +1,12 @@
 from fastapi import HTTPException, APIRouter, Response, Request, Depends
 from starlette.status import (
     HTTP_200_OK,
+    HTTP_201_CREATED,
     HTTP_400_BAD_REQUEST,
     HTTP_401_UNAUTHORIZED,
     HTTP_403_FORBIDDEN,
     HTTP_404_NOT_FOUND,
+    HTTP_409_CONFLICT,
     HTTP_422_UNPROCESSABLE_ENTITY,
     HTTP_500_INTERNAL_SERVER_ERROR,
 )
@@ -21,6 +23,7 @@ from psychohelp.services.appointments.appointments import (
     get_appointment_reschedule_requests,
     reject_appointment_reschedule,
     request_appointment_reschedule,
+    update_emergency_contact,
 )
 from psychohelp.services.appointments import exceptions as exc
 from psychohelp.schemas.appointments import (
@@ -28,6 +31,7 @@ from psychohelp.schemas.appointments import (
     AppointmentCreateRequest,
     AppointmentCancelRequest,
     AppointmentDoneRequest,
+    AppointmentEmergencyContactRequest,
     AppointmentRescheduleCancelRequest,
     AppointmentRescheduleRequestCreate,
     AppointmentRescheduleRequestResponse,
@@ -73,7 +77,7 @@ async def get_appointments(
     return await get_appointments_by_user_id(user_id)
 
 
-@router.post("/create", response_model=AppointmentBase)
+@router.post("/create", response_model=AppointmentBase, status_code=HTTP_201_CREATED)
 @require_permission(PermissionCode.APPOINTMENTS_CREATE_OWN)
 async def create_appointment(
     appointment: AppointmentCreateRequest,
@@ -171,6 +175,30 @@ async def get_appointment(
     return appointment
 
 
+@router.patch(
+    "/{id}/emergency-contact",
+    response_model=AppointmentBase,
+    summary="Изменить или очистить экстренный контакт",
+    responses={
+        401: {"description": "Пользователь не авторизован"},
+        404: {"description": "Запись не найдена или недоступна пользователю"},
+        409: {"description": "Запись завершена или отменена"},
+    },
+)
+async def update_emergency_contact_endpoint(
+    id: UUID,
+    request: AppointmentEmergencyContactRequest,
+    current_user: User = Depends(get_current_user),
+) -> AppointmentBase:
+    """Участники могут менять контакт в awaiting-записи; null очищает поле."""
+    try:
+        return await update_emergency_contact(id, current_user.id, request.emergency_contact)
+    except exc.AppointmentNotFoundException:
+        raise HTTPException(status_code=HTTP_404_NOT_FOUND, detail="Встреча не найдена")
+    except exc.AppointmentNotActiveException as e:
+        raise HTTPException(status_code=HTTP_409_CONFLICT, detail=str(e))
+
+
 @router.put("/{id}/cancel")
 @require_permission(PermissionCode.APPOINTMENTS_CANCEL_OWN)
 async def cancel_appointment(
@@ -201,7 +229,11 @@ async def get_reschedule_requests(
         raise HTTPException(status_code=HTTP_404_NOT_FOUND, detail=str(e))
 
 
-@router.post("/{id}/reschedule-requests", response_model=AppointmentRescheduleRequestResponse)
+@router.post(
+    "/{id}/reschedule-requests",
+    response_model=AppointmentRescheduleRequestResponse,
+    status_code=HTTP_201_CREATED,
+)
 @require_permission(PermissionCode.APPOINTMENTS_RESCHEDULE)
 async def request_reschedule(
     id: UUID,

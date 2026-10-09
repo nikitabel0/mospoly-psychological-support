@@ -4,7 +4,8 @@ from psychohelp.repositories.appointments import (
     UUID,
 )
 from psychohelp.models.appointment_reschedule_requests import AppointmentRescheduleStatus
-from pydantic import AliasChoices, BaseModel, EmailStr, Field
+from pydantic import BaseModel, EmailStr, Field, model_validator
+from pydantic import AliasChoices, BaseModel, ConfigDict, EmailStr, Field, field_validator
 from datetime import datetime
 from typing import Optional
 
@@ -65,6 +66,7 @@ class AppointmentBase(BaseModel):
     cancel_reason: Optional[str] = None
     patient_comment: Optional[str] = None
     conclusion: Optional[str] = None
+    emergency_contact: Optional[str] = None
 
     class Config:
         from_attributes = True
@@ -83,18 +85,37 @@ class AppointmentCreateRequest(BaseModel):
     comment: Optional[str] = None
 
 
+class AppointmentEmergencyContactRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    emergency_contact: str | None = Field(..., max_length=512, strict=True)
+
+    @field_validator("emergency_contact", mode="before")
+    @classmethod
+    def normalize_emergency_contact(cls, value):
+        if isinstance(value, str):
+            return value.strip() or None
+        return value
+
+
 class AppointmentCancelRequest(BaseModel):
     cancel_reason: str
 
 
 class AppointmentDoneRequest(BaseModel):
-    patient_comment: str = Field(
-        ...,
-        min_length=1,
-        max_length=2048,
-        validation_alias=AliasChoices("patient_comment", "conclusion"),
-    )
+    patient_comment: Optional[str] = Field(None, min_length=1, max_length=2048)
     psychologist_comment: Optional[str] = Field(None, max_length=2048)
+
+    @model_validator(mode="before")
+    @classmethod
+    def accept_legacy_conclusion(cls, data):
+        if (
+            isinstance(data, dict)
+            and "patient_comment" not in data
+            and "conclusion" in data
+        ):
+            data = {**data, "patient_comment": data["conclusion"]}
+        return data
 
 
 class AppointmentRescheduleRequestCreate(BaseModel):

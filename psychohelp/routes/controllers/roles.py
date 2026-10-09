@@ -1,11 +1,10 @@
 from uuid import UUID
 
-from fastapi import HTTPException, APIRouter, Request
+from fastapi import HTTPException, APIRouter, Depends
 
 from starlette.status import (
     HTTP_404_NOT_FOUND,
     HTTP_500_INTERNAL_SERVER_ERROR,
-    HTTP_401_UNAUTHORIZED,
     HTTP_403_FORBIDDEN
 )
 
@@ -21,8 +20,8 @@ from psychohelp.repositories.rbac.exceptions import (
 from psychohelp.schemas.roles import RoleAssignRequest, RoleRemoveRequest
 
 from psychohelp.constants.rbac import RoleCode
-from psychohelp.repositories import get_user_id_from_token
-from psychohelp.services.users import users
+from psychohelp.dependencies.auth import get_current_user
+from psychohelp.models.users import User
 
 logger = get_logger(__name__)
 router = APIRouter(prefix="/roles", tags=["roles"])
@@ -33,19 +32,13 @@ def _has_role(user, role_code: RoleCode) -> bool:
 
 
 @router.post("/{user_id}/assign")
-async def assign_role(request: Request, user_id: UUID, role_request: RoleAssignRequest) -> dict[str, str]:
+async def assign_role(
+    user_id: UUID,
+    role_request: RoleAssignRequest,
+    current_user: User = Depends(get_current_user),
+) -> dict[str, str]:
     """Назначить роль пользователю"""
-    token = request.cookies.get("access_token")
-    if not token:
-        raise HTTPException(status_code=HTTP_401_UNAUTHORIZED, detail="Не авторизован")
-
-    try:
-        current_user_id = get_user_id_from_token(token)
-    except Exception:
-        raise HTTPException(status_code=HTTP_401_UNAUTHORIZED, detail="Недействительный токен")
-
-    current_user = await users.get_user_by_id(current_user_id)
-    if not current_user or not _has_role(current_user, RoleCode.ADMIN):
+    if not _has_role(current_user, RoleCode.ADMIN):
         raise HTTPException(status_code=HTTP_403_FORBIDDEN, detail="Только для администраторов")
 
     try:
@@ -70,20 +63,13 @@ async def assign_role(request: Request, user_id: UUID, role_request: RoleAssignR
 
 
 @router.post("/{user_id}/remove")
-async def remove_role(request: Request, user_id: UUID, role_request: RoleRemoveRequest) -> dict[str, str]:
+async def remove_role(
+    user_id: UUID,
+    role_request: RoleRemoveRequest,
+    current_user: User = Depends(get_current_user),
+) -> dict[str, str]:
     """Убрать роль у пользователя"""
-
-    token = request.cookies.get("access_token")
-    if not token:
-        raise HTTPException(status_code=HTTP_401_UNAUTHORIZED, detail="Не авторизован")
-
-    try:
-        current_user_id = get_user_id_from_token(token)
-    except Exception:
-        raise HTTPException(status_code=HTTP_401_UNAUTHORIZED, detail="Недействительный токен")
-
-    current_user = await users.get_user_by_id(current_user_id)
-    if not current_user or not _has_role(current_user, RoleCode.ADMIN):
+    if not _has_role(current_user, RoleCode.ADMIN):
         raise HTTPException(status_code=HTTP_403_FORBIDDEN, detail="Только для администраторов")
 
     try:
