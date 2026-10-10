@@ -6,7 +6,8 @@ from starlette.status import (
     HTTP_201_CREATED,
     HTTP_401_UNAUTHORIZED,
     HTTP_404_NOT_FOUND,
-    HTTP_422_UNPROCESSABLE_ENTITY, HTTP_403_FORBIDDEN,
+    HTTP_422_UNPROCESSABLE_ENTITY, 
+    HTTP_403_FORBIDDEN,
     HTTP_500_INTERNAL_SERVER_ERROR,
 )
 from pydantic import EmailStr, BaseModel
@@ -40,7 +41,6 @@ from psychohelp.services.users.users import update_profile, change_password
 from psychohelp.services.users.exceptions import PermissionDenied, UserNotFound
 from psychohelp.constants.rbac import RoleCode
 from psychohelp.dependencies.auth import get_current_user
-from psychohelp.models.users import User
 
 logger = get_logger(__name__)
 from slowapi import Limiter
@@ -76,7 +76,6 @@ async def register_users(user_data: UserCreateRequest, response: Response) -> Us
         set_refresh_token_in_cookie(response, refresh_token)
         response.status_code = HTTP_201_CREATED
     except ValueError as exc:
-        # todo: нельзя так исключение наружу отдавать
         raise HTTPException(status_code=HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc))
 
     return user
@@ -107,6 +106,7 @@ async def logout(response: Response) -> Response:
     response.delete_cookie("access_token", secure=False, samesite="Lax")
     response.delete_cookie("refresh_token", secure=False, samesite="Lax")
     return response
+
 
 @router.post("/refresh", response_model=UserResponse)
 async def refresh_token(request: Request, response: Response) -> UserResponse:
@@ -204,8 +204,10 @@ async def update_my_profile(
 
     return UserResponse.model_validate(updated_user)
 
+
 class UserStatusResponse(BaseModel):
     status: Optional[str] = None
+
 
 @router.get("/me/status", response_model=UserStatusResponse, summary="Получить статус обучающегося")
 async def get_my_status(
@@ -240,7 +242,7 @@ async def update_user_by_id(
             current_user_id=current_user.id,
             target_user_id=user_id,
             data=data,
-            is_admin=True  # предполагаем, что админ
+            is_admin=True
         )
     except UserNotFound:
         raise HTTPException(
