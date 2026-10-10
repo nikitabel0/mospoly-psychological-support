@@ -55,7 +55,9 @@ async def update_article(
     data: ArticleUpdateRequest,
     current_user: User = Depends(get_current_user),
 ) -> ArticleResponse:
-    article = await articles_service.update_article(article_id, data.model_dump())
+    article = await articles_service.update_article(
+        article_id, data.model_dump(exclude_unset=True)
+    )
     if article is None:
         raise HTTPException(status_code=HTTP_404_NOT_FOUND, detail="Статья не найдена")
     logger.info(f"Article updated: {article_id}")
