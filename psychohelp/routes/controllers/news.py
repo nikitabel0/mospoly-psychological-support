@@ -66,7 +66,7 @@ async def update_news(
     current_user: User = Depends(get_current_user),
 ) -> NewsResponse:
     _ensure_admin(current_user)
-    news_item = await news_service.update_news(news_id, data.model_dump())
+    news_item = await news_service.update_news(news_id, data.model_dump(exclude_unset=True))
     if news_item is None:
         raise HTTPException(status_code=HTTP_404_NOT_FOUND, detail="Новость не найдена")
     logger.info(f"News updated: {news_id}")

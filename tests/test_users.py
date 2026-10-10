@@ -115,10 +115,16 @@ async def test_missing_user_returns_404(monkeypatch):
 
 
 @pytest.mark.asyncio
-async def test_invalid_token_returns_401():
+async def test_invalid_token_returns_401(monkeypatch):
+    target = _user(RoleCode.USER)
+
+    async def fake_get_user_by_id(user_id):
+        return target if user_id == target.id else None
+
+    monkeypatch.setattr(users_controller.users, "get_user_by_id", fake_get_user_by_id)
     transport = httpx.ASGITransport(app=app, raise_app_exceptions=False)
     async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
         client.cookies.set("access_token", "invalid-token")
-        response = await client.get(f"/users/user/{uuid4()}")
+        response = await client.get(f"/users/user/{target.id}")
 
     assert response.status_code == 401

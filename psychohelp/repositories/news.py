@@ -35,6 +35,9 @@ async def create_news(news_data: dict) -> News:
 
 
 async def update_news(news_id: UUID, news_data: dict) -> News | None:
+    if not news_data:
+        return await get_news_by_id(news_id)
+
     async with get_async_db() as session:
         stmt = (
             update(News)

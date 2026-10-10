@@ -2,7 +2,7 @@ from typing import Optional
 from uuid import UUID
 from datetime import datetime
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 
 class ArticleCreateRequest(BaseModel):
@@ -23,6 +23,15 @@ class ArticleUpdateRequest(BaseModel):
     title: Optional[str] = Field(None, min_length=1, max_length=255)
     description: Optional[str] = None
     text: Optional[str] = Field(None, min_length=1)
+
+    # Обязательные поля можно не передавать, но нельзя очистить через null.
+    # Остальные (image, date, author, description) очищаются явным null.
+    @field_validator("slug", "title", "text")
+    @classmethod
+    def forbid_null(cls, value):
+        if value is None:
+            raise ValueError("Поле не может быть null")
+        return value
 
 
 class ArticleResponse(BaseModel):
